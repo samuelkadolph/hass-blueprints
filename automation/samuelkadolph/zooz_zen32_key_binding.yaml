@@ -1,0 +1,189 @@
+blueprint:
+  name: Zooz ZEN32 Key Binding
+  description: Binds one key on a Zooz ZEN32 to controll a fan, light, or switch
+  domain: automation
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen32_key_binding.yaml
+  input:
+    zooz_controller:
+      name: Zooz Controller
+      description: Which Zooz ZEN32 to use
+      selector:
+        device:
+          filter:
+            manufacturer: Zooz
+            model: ZEN32
+    zooz_key:
+      name: Zooz Key
+      default: '005'
+      description: Which key on the controller to use
+      selector:
+        select:
+          mode: dropdown
+          options:
+          - label: '1 (Top)'
+            value: '005'
+          - label: '2 (Mid Left)'
+            value: '001'
+          - label: '3 (Mid Right)'
+            value: '002'
+          - label: '4 (Bottom Left)'
+            value: '003'
+          - label: '5 (Bottom Right)'
+            value: '004'
+    subject:
+      name: Fan/Light/Switch
+      description: What fan, light, or switch to control
+      selector:
+        entity:
+          domain: ['fan', 'light', 'switch']
+
+mode: single
+max_exceeded: silent
+
+trigger:
+- platform: state
+  entity_id: !input subject
+  id: lightOn
+  to: 'on'
+- platform: state
+  entity_id: !input subject
+  id: lightOff
+  to: 'off'
+- platform: event
+  event_type: zwave_js_value_notification
+  event_data:
+    device_id: !input zooz_controller
+    command_class_name: Central Scene
+    property_key: !input zooz_key
+    value: KeyPressed
+  id: keyPressed
+- platform: event
+  event_type: zwave_js_value_notification
+  event_data:
+    device_id: !input zooz_controller
+    command_class_name: Central Scene
+    property_key: !input zooz_key
+    value: KeyPressed2x
+  id: keyPressed2x
+
+variables:
+  subject: !input subject
+  subject_domain: '{{ subject.split(".")[0] }}'
+  zooz_controller: !input zooz_controller
+  zooz_key: !input zooz_key
+  zooz_key_entity_id: '{{ device_entities(zooz_controller)[4 + (int(zooz_key) % 5)] }}'
+
+action:
+- choose:
+  - conditions:
+    - condition: trigger
+      id: lightOn
+    sequence:
+    - service: switch.turn_on
+      target:
+        entity_id: '{{ zooz_key_entity_id }}'
+  - conditions:
+    - condition: trigger
+      id: lightOff
+    sequence:
+    - service: switch.turn_off
+      target:
+        entity_id: '{{ zooz_key_entity_id }}'
+  - conditions:
+    - condition: template
+      value_template: '{{ int(trigger.event.data.property_key) == int(zooz_key) }}'
+    sequence:
+    - choose:
+      - conditions:
+        - condition: trigger
+          id: keyPressed
+        sequence:
+        - if:
+          - condition: state
+            entity_id: !input subject
+            state: "off"
+          then:
+          - choose:
+            - conditions:
+              - condition: template
+                value_template: '{{ subject_domain == "fan" }}'
+              sequence:
+              - service: fan.turn_on
+                target:
+                  entity_id: !input subject
+            - conditions:
+              - condition: template
+                value_template: '{{ subject_domain == "light" }}'
+              sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: !input subject
+            - conditions:
+              - condition: template
+                value_template: '{{ subject_domain == "switch" }}'
+              sequence:
+              - service: light.turn_on
+                target:
+                  entity_id: !input subject
+          - service: switch.turn_on
+            target:
+              entity_id: '{{ zooz_key_entity_id }}'
+          else:
+          - choose:
+            - conditions:
+              - condition: template
+                value_template: '{{ subject_domain == "fan" }}'
+              sequence:
+              - service: fan.turn_off
+                target:
+                  entity_id: !input subject
+            - conditions:
+              - condition: template
+                value_template: '{{ subject_domain == "light" }}'
+              sequence:
+              - service: light.turn_off
+                target:
+                  entity_id: !input subject
+            - conditions:
+              - condition: template
+                value_template: '{{ subject_domain == "switch" }}'
+              sequence:
+              - service: light.turn_off
+                target:
+                  entity_id: !input subject
+          - service: switch.turn_off
+            target:
+              entity_id: '{{ zooz_key_entity_id }}'
+      - conditions:
+        - condition: trigger
+          id: keyPressed2x
+        sequence:
+        - choose:
+          - conditions:
+            - condition: template
+              value_template: '{{ subject_domain == "fan" }}'
+            sequence:
+            - service: fan.turn_on
+              data:
+                percentage: 100
+              target:
+                entity_id: !input subject
+          - conditions:
+            - condition: template
+              value_template: '{{ subject_domain == "light" }}'
+            sequence:
+            - service: light.turn_on
+              data:
+                brightness_pct: 100
+              target:
+                entity_id: !input subject
+          - conditions:
+            - condition: template
+              value_template: '{{ subject_domain == "switch" }}'
+            sequence:
+            - service: switch.turn_on
+              target:
+                entity_id: !input subject
+        - service: switch.turn_on
+          target:
+            entity_id: '{{ zooz_key_entity_id }}'
