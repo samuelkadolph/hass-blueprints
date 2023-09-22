@@ -1,0 +1,219 @@
+blueprint:
+  name: Zooz ZEN76/77 Cover
+  description: Binds a paddle on a Zooz ZEN67/77 to control covers
+  domain: automation
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen7677_cover.yaml
+  input:
+    zooz_switch:
+      name: Zooz Switch
+      description: Which Zooz ZEN76/77 to use
+      selector:
+        device:
+          filter:
+          - manufacturer: Zooz
+            model: ZEN76 800LR
+          - manufacturer: Zooz
+            model: ZEN77 800LR
+    zooz_taps:
+      name: Zooz Taps
+      description: How many taps on a paddle to require
+      default: 'KeyPressed'
+      selector:
+        select:
+          mode: dropdown
+          options:
+          - label: 'Single'
+            value: 'KeyPressed'
+          - label: 'Double'
+            value: 'KeyPressed2x'
+          - label: 'Triple'
+            value: 'KeyPressed3x'
+          - label: 'Quadruple'
+            value: 'KeyPressed4x'
+          - label: 'Quintuple'
+            value: 'KeyPressed5x'
+    zooz_hold:
+      name: Zooz Hold
+      description: Enable cover opening and closing when holding down a paddle
+      default: true
+      selector:
+        boolean:
+    state_variable:
+      name: State Variable
+      description: >
+        This automation requires an input_number helper to store the current state of the shade.
+        Please create one that goes from 0 to 2 and select it here. Must not be shared.
+      selector:
+        entity:
+          domain: input_number
+    covers:
+      name: Covers
+      description: Which covers to control with the switch paddles
+      selector:
+        entity:
+          domain: cover
+          multiple: true
+
+mode: single
+
+trigger_variables:
+  zooz_taps: !input zooz_taps
+
+trigger:
+- platform: state
+  attribute: current_position
+  entity_id: !input covers
+  for:
+    seconds: 10
+  id: reset
+- platform: event
+  event_type: zwave_js_value_notification
+  event_data:
+    device_id: !input zooz_switch
+    command_class_name: Central Scene
+    property_key: '001'
+    value: '{{ zooz_taps }}'
+  id: upPressed
+- platform: event
+  event_type: zwave_js_value_notification
+  event_data:
+    device_id: !input zooz_switch
+    command_class_name: Central Scene
+    property_key: '001'
+    value: 'KeyHeldDown'
+  id: upHeldDown
+- platform: event
+  event_type: zwave_js_value_notification
+  event_data:
+    device_id: !input zooz_switch
+    command_class_name: Central Scene
+    property_key: '001'
+    value: 'KeyReleased'
+  id: upReleased
+- platform: event
+  event_type: zwave_js_value_notification
+  event_data:
+    device_id: !input zooz_switch
+    command_class_name: Central Scene
+    property_key: '002'
+    value: '{{ zooz_taps }}'
+  id: downPressed
+- platform: event
+  event_type: zwave_js_value_notification
+  event_data:
+    device_id: !input zooz_switch
+    command_class_name: Central Scene
+    property_key: '002'
+    value: 'KeyHeldDown'
+  id: downHeldDown
+- platform: event
+  event_type: zwave_js_value_notification
+  event_data:
+    device_id: !input zooz_switch
+    command_class_name: Central Scene
+    property_key: '002'
+    value: 'KeyReleased'
+  id: downReleased
+
+variables:
+  zooz_hold: !input zooz_hold
+
+action:
+- choose:
+  - conditions:
+    - condition: trigger
+      id: reset
+    sequence:
+    - service: input_number.set_value
+      data:
+        value: 0
+      target:
+        entity_id: !input state_variable
+  - conditions:
+    - condition: trigger
+      id: upPressed
+    sequence:
+    - if:
+      - condition: state
+        entity_id: !input state_variable
+        state: "2.0"
+      then:
+      - service: cover.stop_cover
+        target:
+          entity_id: !input covers
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: !input state_variable
+      else:
+      - service: cover.open_cover
+        target:
+          entity_id: !input covers
+      - service: input_number.set_value
+        data:
+          value: 1
+        target:
+          entity_id: !input state_variable
+  - conditions:
+    - condition: trigger
+      id: upHeldDown
+    - condition: template
+      value_template: '{{ zooz_hold }}'
+    sequence:
+    - service: cover.open_cover
+      target:
+        entity_id: !input covers
+  - conditions:
+    - condition: trigger
+      id: upReleased
+    - condition: template
+      value_template: '{{ zooz_hold }}'
+    sequence:
+    - service: cover.stop_cover
+      target:
+        entity_id: !input covers
+  - conditions:
+    - condition: trigger
+      id: downPressed
+    sequence:
+    - if:
+      - condition: state
+        entity_id: !input state_variable
+        state: "1.0"
+      then:
+      - service: cover.stop_cover
+        target:
+          entity_id: !input covers
+      - service: input_number.set_value
+        data:
+          value: 0
+        target:
+          entity_id: !input state_variable
+      else:
+      - service: cover.close_cover
+        target:
+          entity_id: !input covers
+      - service: input_number.set_value
+        data:
+          value: 2
+        target:
+          entity_id: !input state_variable
+  - conditions:
+    - condition: trigger
+      id: downHeldDown
+    - condition: template
+      value_template: '{{ zooz_hold }}'
+    sequence:
+    - service: cover.close_cover
+      target:
+        entity_id: !input covers
+  - conditions:
+    - condition: trigger
+      id: downReleased
+    - condition: template
+      value_template: '{{ zooz_hold }}'
+    sequence:
+    - service: cover.stop_cover
+      target:
+        entity_id: !input covers
