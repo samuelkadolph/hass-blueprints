@@ -71,7 +71,7 @@ variables:
   subject_domain: '{{ subject.split(".")[0] }}'
   zooz_controller: !input zooz_controller
   zooz_key: !input zooz_key
-  zooz_key_entity_id: '{{ device_entities(zooz_controller)[4 + (int(zooz_key) % 5)] }}'
+  zooz_key_entity_id: '{{ device_entities(zooz_controller) | select("search", "button_" + (int(zooz_key) % 5 + 1) | string + "_indication") | first }}'
 
 action:
 - choose:
