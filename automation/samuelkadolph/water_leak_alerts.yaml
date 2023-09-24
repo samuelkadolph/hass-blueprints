@@ -1,0 +1,53 @@
+blueprint:
+  name: Water Leak Alerts
+  description: Send notifications when a water leak is detected
+  domain: automation
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/water_leak_alerts.yaml
+  input:
+    area:
+      name: Area
+      description: Name of the area the sensors monitor for alerts
+      default: ""
+    leak_sensors:
+      name: Leak Sensors
+      description: Which sensors to monitor
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+
+mode: single
+max_exceeded: silent
+
+variables:
+  area: !input area
+
+trigger:
+- platform: state
+  entity_id: !input leak_sensors
+  to: "on"
+action:
+- repeat:
+    while:
+    - condition: state
+      entity_id: !input leak_sensors
+      match: any
+      state: "on"
+    sequence:
+    - service: notify.notify
+      data:
+        data:
+          push:
+            sound:
+              name: Default
+              critical: 1
+              volume: 1
+        title: WATER LEAK!
+        message: Water detected in {{ area }}!
+    - service: notify.alexa_media_everywhere
+      data:
+        data:
+          type: announce
+        message: WATER LEAK! Water detected in {{ area }}!
+    - delay:
+        minutes: 2
