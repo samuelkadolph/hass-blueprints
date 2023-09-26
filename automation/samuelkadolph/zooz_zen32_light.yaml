@@ -1,19 +1,19 @@
 blueprint:
-  name: Zooz ZEN32 Light
-  description: Binds a key on a Zooz ZEN32 to control a light (or fan/switch)
+  name: Zooz ZEN32 Lights
+  description: Binds a key on a Zooz ZEN32 to control lights (or fans/switches)
   domain: automation
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen32_light.yaml
   input:
-    zooz_controller:
-      name: Zooz Controller
-      description: Which Zooz ZEN32 to use
+    controller:
+      name: Controller
+      description: Which Zooz ZEN32 controller to use
       selector:
         device:
           filter:
             manufacturer: Zooz
             model: ZEN32
-    zooz_key:
-      name: Zooz Key
+    key:
+      name: Key
       default: '005'
       description: Which key on the controller to use
       selector:
@@ -30,160 +30,134 @@ blueprint:
             value: '003'
           - label: '5 (Bottom Right)'
             value: '004'
-    subject:
-      name: Light
-      description: Which light (or fan/switch) to control with the key
+    led_enable:
+      name: Enable LED
+      description: Enable changing the LED to reflect the state of the covers
+      default: true
+      selector:
+        boolean:
+    subjects:
+      name: Lights
+      description: Which lights (or fans/switches) to control with the key
       selector:
         entity:
           domain: ['fan', 'light', 'switch']
+          multiple: true
 
 mode: single
 max_exceeded: silent
 
 trigger:
 - platform: state
-  entity_id: !input subject
-  id: lightOn
+  entity_id: !input subjects
   to: 'on'
+  id: lightOn
 - platform: state
-  entity_id: !input subject
-  id: lightOff
+  entity_id: !input subjects
   to: 'off'
+  id: lightOff
 - platform: event
   event_type: zwave_js_value_notification
   event_data:
-    device_id: !input zooz_controller
+    device_id: !input controller
     command_class_name: Central Scene
-    property_key: !input zooz_key
+    property_key: !input key
     value: KeyPressed
   id: keyPressed
 - platform: event
   event_type: zwave_js_value_notification
   event_data:
-    device_id: !input zooz_controller
+    device_id: !input controller
     command_class_name: Central Scene
-    property_key: !input zooz_key
+    property_key: !input key
     value: KeyPressed2x
   id: keyPressed2x
 
 variables:
-  subject: !input subject
-  subject_domain: '{{ subject.split(".")[0] }}'
-  zooz_controller: !input zooz_controller
-  zooz_key: !input zooz_key
-  zooz_key_entity_id: '{{ device_entities(zooz_controller) | select("search", "button_" + (int(zooz_key) % 5 + 1) | string + "_indication") | first }}'
+  controller: !input controller
+  key: !input key
+  key_entity_id: '{{ device_entities(controller) | select("search", "button_" + (int(key) % 5 + 1) | string + "_indication") | first }}'
+  led_enable: !input led_enable
+  subjects: !input subjects
+  fans: '{{ subjects | select("search", "^fan.") | list }}'
+  lights: '{{ subjects | select("search", "^light.") | list }}'
+  switches: '{{ subjects | select("search", "^switch.") | list }}'
 
 action:
 - choose:
   - conditions:
     - condition: trigger
       id: lightOn
+    - condition: template
+      value_template: '{{ led_enable }}'
     sequence:
     - service: switch.turn_on
-      target:
-        entity_id: '{{ zooz_key_entity_id }}'
+      target: { entity_id: '{{ key_entity_id }}' }
+
   - conditions:
     - condition: trigger
       id: lightOff
+    - condition: template
+      value_template: '{{ led_enable }}'
     sequence:
     - service: switch.turn_off
-      target:
-        entity_id: '{{ zooz_key_entity_id }}'
+      target: { entity_id: '{{ key_entity_id }}' }
+
   - conditions:
+    - condition: trigger
+      id: keyPressed
     - condition: template
-      value_template: '{{ int(trigger.event.data.property_key) == int(zooz_key) }}'
+      value_template: '{{ int(trigger.event.data.property_key) == int(key) }}'
     sequence:
-    - choose:
-      - conditions:
-        - condition: trigger
-          id: keyPressed
-        sequence:
-        - if:
-          - condition: state
-            entity_id: !input subject
-            state: "off"
-          then:
-          - choose:
-            - conditions:
-              - condition: template
-                value_template: '{{ subject_domain == "fan" }}'
-              sequence:
-              - service: fan.turn_on
-                target:
-                  entity_id: !input subject
-            - conditions:
-              - condition: template
-                value_template: '{{ subject_domain == "light" }}'
-              sequence:
-              - service: light.turn_on
-                target:
-                  entity_id: !input subject
-            - conditions:
-              - condition: template
-                value_template: '{{ subject_domain == "switch" }}'
-              sequence:
-              - service: light.turn_on
-                target:
-                  entity_id: !input subject
-          - service: switch.turn_on
-            target:
-              entity_id: '{{ zooz_key_entity_id }}'
-          else:
-          - choose:
-            - conditions:
-              - condition: template
-                value_template: '{{ subject_domain == "fan" }}'
-              sequence:
-              - service: fan.turn_off
-                target:
-                  entity_id: !input subject
-            - conditions:
-              - condition: template
-                value_template: '{{ subject_domain == "light" }}'
-              sequence:
-              - service: light.turn_off
-                target:
-                  entity_id: !input subject
-            - conditions:
-              - condition: template
-                value_template: '{{ subject_domain == "switch" }}'
-              sequence:
-              - service: light.turn_off
-                target:
-                  entity_id: !input subject
-          - service: switch.turn_off
-            target:
-              entity_id: '{{ zooz_key_entity_id }}'
-      - conditions:
-        - condition: trigger
-          id: keyPressed2x
-        sequence:
-        - choose:
-          - conditions:
-            - condition: template
-              value_template: '{{ subject_domain == "fan" }}'
-            sequence:
-            - service: fan.turn_on
-              data:
-                percentage: 100
-              target:
-                entity_id: !input subject
-          - conditions:
-            - condition: template
-              value_template: '{{ subject_domain == "light" }}'
-            sequence:
-            - service: light.turn_on
-              data:
-                brightness_pct: 100
-              target:
-                entity_id: !input subject
-          - conditions:
-            - condition: template
-              value_template: '{{ subject_domain == "switch" }}'
-            sequence:
-            - service: switch.turn_on
-              target:
-                entity_id: !input subject
+    - if:
+      - condition: state
+        entity_id: !input subjects
+        match: any
+        state: 'off'
+      then:
+      - service: fan.turn_on
+        target: { entity_id: '{{ fans }}' }
+      - service: light.turn_on
+        target: { entity_id: '{{ lights }}' }
+      - service: switch.turn_on
+        target: { entity_id: '{{ switches }}' }
+      - if:
+        - condition: template
+          value_template: '{{ led_enable }}'
+        then:
         - service: switch.turn_on
-          target:
-            entity_id: '{{ zooz_key_entity_id }}'
+          target: { entity_id: '{{ key_entity_id }}' }
+      else:
+      - service: fan.turn_off
+        target: { entity_id: '{{ fans }}' }
+      - service: light.turn_off
+        target: { entity_id: '{{ lights }}' }
+      - service: switch.turn_off
+        target: { entity_id: '{{ switches }}' }
+      - if:
+        - condition: template
+          value_template: '{{ led_enable }}'
+        then:
+        - service: switch.turn_off
+          target: { entity_id: '{{ key_entity_id }}' }
+
+  - conditions:
+    - condition: trigger
+      id: keyPressed2x
+    - condition: template
+      value_template: '{{ int(trigger.event.data.property_key) == int(key) }}'
+    sequence:
+    - service: fan.turn_on
+      data: { percentage: 100 }
+      target: { entity_id: '{{ fans }}' }
+    - service: light.turn_on
+      data: { brightness_pct: 100 }
+      target: { entity_id: '{{ lights }}' }
+    - service: switch.turn_on
+      target: { entity_id: '{{ switches }}' }
+    - if:
+      - condition: template
+        value_template: '{{ led_enable }}'
+      then:
+      - service: switch.turn_on
+        target: { entity_id: '{{ key_entity_id }}' }
