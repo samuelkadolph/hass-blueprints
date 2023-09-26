@@ -45,7 +45,7 @@ blueprint:
     state_variable:
       name: State Variable
       description: >
-        This automation requires an input_number helper to store the current state of the shade.
+        This automation requires a Number helper to store the current state of the shade.
         Please create one that goes from 0 to 4 and select it here.
         Must only be shared with automations using the same set of shades.
       selector:
