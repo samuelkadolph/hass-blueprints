@@ -1,0 +1,269 @@
+blueprint:
+  name: Zooz ZEN32 Cover
+  description: Binds a key on a Zooz ZEN32 to control covers
+  domain: automation
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen32_cover.yaml
+  input:
+    controller:
+      name: Controller
+      description: Which Zooz ZEN32 controller to use
+      selector:
+        device:
+          filter:
+            manufacturer: Zooz
+            model: ZEN32
+    key:
+      name: Key
+      default: '005'
+      description: Which key on the controller to use
+      selector:
+        select:
+          mode: dropdown
+          options:
+          - label: '1 (Top)'
+            value: '005'
+          - label: '2 (Mid Left)'
+            value: '001'
+          - label: '3 (Mid Right)'
+            value: '002'
+          - label: '4 (Bottom Left)'
+            value: '003'
+          - label: '5 (Bottom Right)'
+            value: '004'
+    led_enable:
+      name: Enable LED
+      description: Enable changing the LED to reflect the state of the covers
+      default: true
+      selector:
+        boolean:
+    state_variable:
+      name: State Variable
+      description: >
+        This automation requires an input_number helper to store the current state of the shade.
+        Please create one that goes from 0 to 4 and select it here.
+        Must only be shared with automations using the same set of shades.
+      selector:
+        entity:
+          domain: input_number
+    covers:
+      name: Covers
+      description: Which covers to control with the key
+      selector:
+        entity:
+          domain: cover
+          multiple: true
+
+mode: single
+max_exceeded: silent
+
+trigger:
+- platform: state
+  attribute: current_position
+  entity_id: !input covers
+  to: [0, 100]
+  for: { seconds: 30 }
+  id: reset
+- platform: state
+  entity_id: !input covers
+  id: coverOpen
+  to: open
+- platform: state
+  entity_id: !input covers
+  id: coverClosed
+  to: closed
+- platform: event
+  event_type: zwave_js_value_notification
+  event_data:
+    device_id: !input controller
+    command_class_name: Central Scene
+    property_key: !input key
+    value: KeyPressed
+  id: keyPressed
+- platform: event
+  event_type: zwave_js_value_notification
+  event_data:
+    device_id: !input controller
+    command_class_name: Central Scene
+    property_key: !input key
+    value: KeyHeldDown
+  id: keyHeldDown
+- platform: event
+  event_type: zwave_js_value_notification
+  event_data:
+    device_id: !input controller
+    command_class_name: Central Scene
+    property_key: !input key
+    value: KeyReleased
+  id: keyReleased
+
+variables:
+  controller: !input controller
+  key: !input key
+  key_entity_id: '{{ device_entities(controller) | select("search", "button_" + (int(key) % 5 + 1) | string + "_indication") | first }}'
+  led_enable: !input led_enable
+  state_variable: !input state_variable
+  state: '{{ int(states(state_variable)) }}'
+
+action:
+- choose:
+  - conditions:
+    - condition: trigger
+      id: reset
+    sequence:
+    - service: input_number.set_value
+      data: { value: 0 }
+      target: { entity_id: !input state_variable }
+
+  - conditions:
+    - condition: trigger
+      id: coverOpen
+    - condition: template
+      value_template: '{{ led_enable }}'
+    sequence:
+    - service: switch.turn_on
+      target: { entity_id: '{{ key_entity_id }}' }
+
+  - conditions:
+    - condition: trigger
+      id: coverClosed
+    - condition: template
+      value_template: '{{ led_enable }}'
+    sequence:
+    - service: switch.turn_off
+      target: { entity_id: '{{ key_entity_id }}' }
+
+  - conditions:
+    - condition: trigger
+      id: keyPressed
+    - condition: template
+      value_template: '{{ int(trigger.event.data.property_key) == int(key) }}'
+    sequence:
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ state == 0 }}'
+        sequence:
+        - if:
+          - condition: state
+            entity_id: !input covers
+            state: closed
+          then:
+          - service: cover.open_cover
+            target: { entity_id: !input covers }
+          - service: input_number.set_value
+            data: { value: 1 }
+            target: { entity_id: !input state_variable }
+          else:
+          - service: cover.close_cover
+            target: { entity_id: !input covers }
+          - service: input_number.set_value
+            data: { value: 3 }
+            target: { entity_id: !input state_variable }
+      - conditions:
+        - condition: template
+          value_template: '{{ state == 1 }}'
+        sequence:
+        - service: cover.stop_cover
+          target: { entity_id: !input covers }
+        - service: input_number.set_value
+          data: { value: 2 }
+          target: { entity_id: !input state_variable }
+      - conditions:
+        - condition: template
+          value_template: '{{ state == 2 }}'
+        sequence:
+        - service: cover.close_cover
+          target: { entity_id: !input covers }
+        - service: input_number.set_value
+          data: { value: 3 }
+          target: { entity_id: !input state_variable }
+      - conditions:
+        - condition: template
+          value_template: '{{ state == 3 }}'
+        sequence:
+        - service: cover.stop_cover
+          target: { entity_id: !input covers }
+        - service: input_number.set_value
+          data: { value: 4 }
+          target: { entity_id: !input state_variable }
+      - conditions:
+        - condition: template
+          value_template: '{{ state == 4 }}'
+        sequence:
+        - service: cover.open_cover
+          target: { entity_id: !input covers }
+        - service: input_number.set_value
+          data: { value: 1 }
+          target: { entity_id: !input state_variable }
+
+  - conditions:
+    - condition: trigger
+      id: keyHeldDown
+    - condition: template
+      value_template: '{{ int(trigger.event.data.property_key) == int(key) }}'
+    sequence:
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ state == 0 }}'
+        sequence:
+        - if:
+          - condition: state
+            entity_id: !input covers
+            state: closed
+          then:
+          - service: cover.open_cover
+            target: { entity_id: !input covers }
+          - service: input_number.set_value
+            data: { value: 1 }
+            target: { entity_id: !input state_variable }
+          else:
+          - service: cover.close_cover
+            target: { entity_id: !input covers }
+          - service: input_number.set_value
+            data: { value: 3 }
+            target: { entity_id: !input state_variable }
+      - conditions:
+        - condition: template
+          value_template: '{{ state == 2 }}'
+        sequence:
+        - service: cover.close_cover
+          target: { entity_id: !input covers }
+        - service: input_number.set_value
+          data: { value: 3 }
+          target: { entity_id: !input state_variable }
+      - conditions:
+        - condition: template
+          value_template: '{{ state == 4 }}'
+        sequence:
+        - service: cover.open_cover
+          target: { entity_id: !input covers }
+        - service: input_number.set_value
+          data: { value: 1 }
+          target: { entity_id: !input state_variable }
+
+  - conditions:
+    - condition: trigger
+      id: keyReleased
+    - condition: template
+      value_template: '{{ int(trigger.event.data.property_key) == int(key) }}'
+    sequence:
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ state == 1 }}'
+        sequence:
+        - service: cover.stop_cover
+          target: { entity_id: !input covers }
+        - service: input_number.set_value
+          data: { value: 2 }
+          target: { entity_id: !input state_variable }
+      - conditions:
+        - condition: template
+          value_template: '{{ state == 3 }}'
+        sequence:
+        - service: cover.stop_cover
+          target: { entity_id: !input covers }
+        - service: input_number.set_value
+          data: { value: 4 }
+          target: { entity_id: !input state_variable }

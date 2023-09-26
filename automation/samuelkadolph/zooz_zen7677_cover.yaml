@@ -64,8 +64,8 @@ trigger:
 - platform: state
   attribute: current_position
   entity_id: !input covers
-  for:
-    seconds: 10
+  to: [0, 100]
+  for: { seconds: 30 }
   id: reset
 - platform: event
   event_type: zwave_js_value_notification
@@ -118,6 +118,8 @@ trigger:
 
 variables:
   paddle_hold: !input paddle_hold
+  state_variable: !input state_variable
+  state: '{{ int(states(state_variable)) }}'
 
 action:
 - choose:
@@ -126,95 +128,109 @@ action:
       id: reset
     sequence:
     - service: input_number.set_value
-      data:
-        value: 0
-      target:
-        entity_id: !input state_variable
+      data: { value: 0 }
+      target: { entity_id: !input state_variable }
+
   - conditions:
     - condition: trigger
       id: upPressed
     sequence:
-    - if:
-      - condition: state
-        entity_id: !input state_variable
-        state: "2.0"
-      then:
-      - service: cover.stop_cover
-        target:
-          entity_id: !input covers
-      - service: input_number.set_value
-        data:
-          value: 0
-        target:
-          entity_id: !input state_variable
-      else:
-      - service: cover.open_cover
-        target:
-          entity_id: !input covers
-      - service: input_number.set_value
-        data:
-          value: 1
-        target:
-          entity_id: !input state_variable
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ state in [0, 2, 4] }}'
+        sequence:
+        - service: cover.open_cover
+          target: { entity_id: !input covers }
+        - service: input_number.set_value
+          data: { value: 1 }
+          target: { entity_id: !input state_variable }
+      - conditions:
+        - condition: template
+          value_template: '{{ state == 3 }}'
+        sequence:
+        - service: cover.stop_cover
+          target: { entity_id: !input covers }
+        - service: input_number.set_value
+          data: { value: 4 }
+          target: { entity_id: !input state_variable }
+
   - conditions:
     - condition: trigger
       id: upHeldDown
     - condition: template
       value_template: '{{ paddle_hold }}'
+    - condition: template
+      value_template: '{{ state in [0, 2, 3, 4] }}'
     sequence:
     - service: cover.open_cover
-      target:
-        entity_id: !input covers
+      target: { entity_id: !input covers }
+    - service: input_number.set_value
+      data: { value: 1 }
+      target: { entity_id: !input state_variable }
+
   - conditions:
     - condition: trigger
       id: upReleased
     - condition: template
       value_template: '{{ paddle_hold }}'
+    - condition: template
+      value_template: '{{ state == 1 }}'
     sequence:
     - service: cover.stop_cover
-      target:
-        entity_id: !input covers
+      target: { entity_id: !input covers }
+    - service: input_number.set_value
+      data: { value: 2 }
+      target: { entity_id: !input state_variable }
+
   - conditions:
     - condition: trigger
       id: downPressed
     sequence:
-    - if:
-      - condition: state
-        entity_id: !input state_variable
-        state: "1.0"
-      then:
-      - service: cover.stop_cover
-        target:
-          entity_id: !input covers
-      - service: input_number.set_value
-        data:
-          value: 0
-        target:
-          entity_id: !input state_variable
-      else:
-      - service: cover.close_cover
-        target:
-          entity_id: !input covers
-      - service: input_number.set_value
-        data:
-          value: 2
-        target:
-          entity_id: !input state_variable
+    - choose:
+      - conditions:
+        - condition: template
+          value_template: '{{ state in [0, 2, 4] }}'
+        sequence:
+        - service: cover.close_cover
+          target: { entity_id: !input covers }
+        - service: input_number.set_value
+          data: { value: 3 }
+          target: { entity_id: !input state_variable }
+      - conditions:
+        - condition: template
+          value_template: '{{ state == 1 }}'
+        sequence:
+        - service: cover.stop_cover
+          target: { entity_id: !input covers }
+        - service: input_number.set_value
+          data: { value: 2 }
+          target: { entity_id: !input state_variable }
+
   - conditions:
     - condition: trigger
       id: downHeldDown
     - condition: template
       value_template: '{{ paddle_hold }}'
+    - condition: template
+      value_template: '{{ state in [0, 1, 2, 4] }}'
     sequence:
     - service: cover.close_cover
-      target:
-        entity_id: !input covers
+      target: { entity_id: !input covers }
+    - service: input_number.set_value
+      data: { value: 3 }
+      target: { entity_id: !input state_variable }
+
   - conditions:
     - condition: trigger
       id: downReleased
     - condition: template
       value_template: '{{ paddle_hold }}'
+    - condition: template
+      value_template: '{{ state == 3 }}'
     sequence:
     - service: cover.stop_cover
-      target:
-        entity_id: !input covers
+      target: { entity_id: !input covers }
+    - service: input_number.set_value
+      data: { value: 4 }
+      target: { entity_id: !input state_variable }
