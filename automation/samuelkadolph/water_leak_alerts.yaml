@@ -6,8 +6,9 @@ blueprint:
   input:
     area:
       name: Area
-      description: Name of the area the sensors monitor for alerts
-      default: ''
+      description: Name of the area the sensors are in for alerts
+      selector:
+        text:
     leak_sensors:
       name: Leak Sensors
       description: Which sensors to monitor
