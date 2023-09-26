@@ -1,8 +1,8 @@
 blueprint:
-  name: Zooz ZEN76/77 Cover
-  description: Binds paddle presses on a Zooz ZEN67/77 to control covers
+  name: HomeSeer WX-300 Covers
+  description: Binds paddle presses on a HomeSeer WX-300 to control covers
   domain: automation
-  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen7677_cover.yaml
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/homeseer_wx300_covers.yaml
   input:
     switch:
       name: Switch
@@ -10,10 +10,14 @@ blueprint:
       selector:
         device:
           filter:
-          - manufacturer: Zooz
-            model: ZEN76 800LR
-          - manufacturer: Zooz
-            model: ZEN77 800LR
+          - manufacturer: HomeSeer Technologies
+            model: HS-WX300
+          - manufacturer: HomeSeer Technologies
+            model: HS-WD200+
+          - manufacturer: HomeSeer Technologies
+            model: HS-WS200+
+          - manufacturer: HomeSeer Technologies
+            model: WD-100
     paddle_taps:
       name: Paddle Taps
       description: How many taps on a paddle to require
@@ -34,7 +38,7 @@ blueprint:
             value: 'KeyPressed5x'
     paddle_hold:
       name: Paddle Hold
-      description: Enable cover opening and closing when holding down a paddle
+      description: Enable opening and closing when holding down a paddle
       default: true
       selector:
         boolean:
