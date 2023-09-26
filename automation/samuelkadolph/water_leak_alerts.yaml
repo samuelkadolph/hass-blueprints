@@ -7,7 +7,7 @@ blueprint:
     area:
       name: Area
       description: Name of the area the sensors monitor for alerts
-      default: ""
+      default: ''
     leak_sensors:
       name: Leak Sensors
       description: Which sensors to monitor
@@ -25,14 +25,14 @@ variables:
 trigger:
 - platform: state
   entity_id: !input leak_sensors
-  to: "on"
+  to: 'on'
 action:
 - repeat:
     while:
     - condition: state
       entity_id: !input leak_sensors
       match: any
-      state: "on"
+      state: 'on'
     sequence:
     - service: notify.notify
       data:
