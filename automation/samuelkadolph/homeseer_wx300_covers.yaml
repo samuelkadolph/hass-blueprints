@@ -10,14 +10,10 @@ blueprint:
       selector:
         device:
           filter:
-          - manufacturer: HomeSeer Technologies
-            model: HS-WX300
-          - manufacturer: HomeSeer Technologies
-            model: HS-WD200+
-          - manufacturer: HomeSeer Technologies
-            model: HS-WS200+
-          - manufacturer: HomeSeer Technologies
-            model: WD-100
+          - { manufacturer: HomeSeer Technologies, model: HS-WX300 }
+          - { manufacturer: HomeSeer Technologies, model: HS-WD200+ }
+          - { manufacturer: HomeSeer Technologies, model: HS-WS200+ }
+          - { manufacturer: HomeSeer Technologies, model: WD-100 }
     paddle_taps:
       name: Paddle Taps
       description: How many taps on a paddle to require
