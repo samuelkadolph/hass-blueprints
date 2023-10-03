@@ -2,6 +2,7 @@ blueprint:
   name: HomeSeer WX-300 Lights
   description: Binds paddle presses on a HomeSeer WX-300 to control lights (or fans/switches)
   domain: automation
+  author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/homeseer_wx300_lights.yaml
   input:
     switch:

@@ -2,6 +2,7 @@ blueprint:
   name: Zooz ZEN32 Lights
   description: Binds a key on a Zooz ZEN32 to control lights (or fans/switches)
   domain: automation
+  author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen32_lights.yaml
   input:
     controller:

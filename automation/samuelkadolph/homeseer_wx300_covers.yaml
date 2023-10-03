@@ -2,6 +2,7 @@ blueprint:
   name: HomeSeer WX-300 Covers
   description: Binds paddle presses on a HomeSeer WX-300 to control covers
   domain: automation
+  author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/homeseer_wx300_covers.yaml
   input:
     switch:
