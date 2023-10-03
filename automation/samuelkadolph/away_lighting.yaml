@@ -60,6 +60,12 @@ blueprint:
       default: { minutes: 30 }
       selector:
         duration:
+    on_conditions:
+      name: On Conditions
+      description: What other conditions should be checked before turning on the lights?
+      default: []
+      selector:
+        condition:
     off_trigger:
       name: Off Trigger
       description: What do you want to trigger turning off the lights?
@@ -73,7 +79,7 @@ blueprint:
       selector: *elevation-helper-selector
     off_elevation_manual:
       name: Off Sun Elevation
-      description: What elevation of the sun should off the covers?
+      description: What elevation of the sun should turn off the lights?
       default: 0.0
       selector: *elevation-manual-selector
     off_time_helper:
@@ -83,7 +89,7 @@ blueprint:
       selector: *time-helper-selector
     off_time_manual:
       name: Off Time
-      description: What time of day should off the covers?
+      description: What time of day should the lights turn off?
       default: '22:00:00'
       selector:
         time:
@@ -93,6 +99,12 @@ blueprint:
       default: { minutes: 30 }
       selector:
         duration:
+    off_conditions:
+      name: Off Conditions
+      description: What other conditions should be checked before turning off the lights?
+      default: []
+      selector:
+        condition:
     lights:
       name: Lights
       description: Which lights to turn on and off?
@@ -159,32 +171,39 @@ condition:
 action:
 - choose:
   - conditions:
-    - condition: or
+    - condition: and
       conditions:
-      - condition: template
-        value_template: '{{ trigger.id == "onElevationHelper" and on_trigger == "elevation" and on_elevation_helper != None }}'
-      - condition: template
-        value_template: '{{ trigger.id == "onElevationManual" and on_trigger == "elevation" and on_elevation_helper == None }}'
-      - condition: template
-        value_template: '{{ trigger.id == "onTimeHelper" and on_trigger == "time" and on_time_helper != None }}'
-      - condition: template
-        value_template: '{{ trigger.id == "onTimeManual" and on_trigger == "time" and on_time_helper == None }}'
+      - condition: !input on_conditions
+      - condition: or
+        conditions:
+        - condition: template
+          value_template: '{{ trigger.id == "onElevationHelper" and on_trigger == "elevation" and on_elevation_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "onElevationManual" and on_trigger == "elevation" and on_elevation_helper == None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "onTimeHelper" and on_trigger == "time" and on_time_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "onTimeManual" and on_trigger == "time" and on_time_helper == None }}'
     sequence:
     - delay:
         seconds: '{{ on_delay_rand }}'
     - service: light.turn_on
       target: { entity_id: !input lights }
+
   - conditions:
-    - condition: or
+    - condition: and
       conditions:
-      - condition: template
-        value_template: '{{ trigger.id == "offElevationHelper" and off_trigger == "elevation" and off_elevation_helper != None }}'
-      - condition: template
-        value_template: '{{ trigger.id == "offElevationManual" and off_trigger == "elevation" and off_elevation_helper == None }}'
-      - condition: template
-        value_template: '{{ trigger.id == "offTimeHelper" and off_trigger == "time" and off_time_helper != None }}'
-      - condition: template
-        value_template: '{{ trigger.id == "offTimeManual" and off_trigger == "time" and off_time_helper == None }}'
+      - condition: !input off_conditions
+      - condition: or
+        conditions:
+        - condition: template
+          value_template: '{{ trigger.id == "offElevationHelper" and off_trigger == "elevation" and off_elevation_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "offElevationManual" and off_trigger == "elevation" and off_elevation_helper == None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "offTimeHelper" and off_trigger == "time" and off_time_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "offTimeManual" and off_trigger == "time" and off_time_helper == None }}'
     sequence:
     - delay:
         seconds: '{{ off_delay_rand }}'
