@@ -1,0 +1,192 @@
+blueprint:
+  name: Away Lighting
+  description: Turns lights on and off after a delay at specified times when no one is home.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/away_lighting.yaml
+  input:
+    on_trigger:
+      name: On Trigger
+      description: What do you want to trigger turning the lights on?
+      default: sun
+      selector:
+        select: &trigger-select
+          mode: dropdown
+          options:
+          - label: "Sun Elevation"
+            value: "sun"
+          - label: "Time"
+            value: "time"
+          - label: "None"
+            value: "none"
+    on_elevation_helper:
+      name: On Sun Elevation Helper
+      description: Use a helper or leave empty to specify the elevation below.
+      default:
+      selector: &elevation-helper-selector
+        entity:
+          filter:
+          - domain: input_number
+    on_elevation_manual:
+      name: On Sun Elevation
+      description: What elevation of the sun should turn on the lights?
+      default: 0.0
+      selector: &elevation-manual-selector
+        number:
+          max: 5.0
+          min: -18.0
+          step: 0.5
+          unit_of_measurement: °
+          mode: slider
+    on_time_helper:
+      name: On Time Helper
+      description: Use a helper or leave empty to specify the time below.
+      default:
+      selector: &time-helper-selector
+        entity:
+          filter:
+          - domain: input_datetime
+          - domain: sensor
+            device_class: timestamp
+    on_time_manual:
+      name: On Time
+      description: What time of day should turn on the lights?
+      default: '20:00:00'
+      selector:
+        time:
+    on_delay:
+      name: On Delay
+      description: How long to delay turning on the lights? A random time between zero and this will be picked.
+      default: { minutes: 30 }
+      selector:
+        duration:
+    off_trigger:
+      name: Off Trigger
+      description: What do you want to trigger turning off the lights?
+      default: time
+      selector:
+        select: *trigger-select
+    off_elevation_helper:
+      name: Off Sun Elevation Helper
+      description: Use a helper or leave empty to specify the elevation below.
+      default:
+      selector: *elevation-helper-selector
+    off_elevation_manual:
+      name: Off Sun Elevation
+      description: What elevation of the sun should off the covers?
+      default: 0.0
+      selector: *elevation-manual-selector
+    off_time_helper:
+      name: Off Time Helper
+      description: Use a helper or leave empty to specify the time below.
+      default:
+      selector: *time-helper-selector
+    off_time_manual:
+      name: Off Time
+      description: What time of day should off the covers?
+      default: '22:00:00'
+      selector:
+        time:
+    off_delay:
+      name: Off Delay
+      description: How long to delay turning off the lights? A random time between zero and this will be picked.
+      default: { minutes: 30 }
+      selector:
+        duration:
+    lights:
+      name: Lights
+      description: Which lights to turn on and off?
+      selector:
+        entity:
+          domain: light
+          multiple: true
+    zone:
+      name: Zone
+      description: Which zone must be empty to enable light control?
+      selector:
+        entity:
+          domain: zone
+
+mode: single
+
+trigger_variables:
+  off_elevation_helper: !input off_elevation_helper
+  off_elevation_manual: !input off_elevation_manual
+  on_elevation_helper: !input on_elevation_helper
+  on_elevation_manual: !input on_elevation_manual
+
+trigger:
+- platform: template
+  value_template: '{{ on_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(on_elevation_helper) | float) }}'
+  id: onElevationHelper
+- platform: template
+  value_template: '{{ on_elevation_helper == None and state_attr("sun.sun", "elevation") < on_elevation_manual }}'
+  id: onElevationManual
+- platform: time
+  at: !input on_time_helper
+  id: onTimeHelper
+- platform: time
+  at: !input on_time_manual
+  id: onTimeManual
+- platform: template
+  value_template: '{{ off_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(off_elevation_helper) | float) }}'
+  id: offElevationHelper
+- platform: template
+  value_template: '{{ off_elevation_helper == None and state_attr("sun.sun", "elevation") > off_elevation_manual }}'
+  id: offElevationManual
+- platform: time
+  at: !input off_time_helper
+  id: offTimeHelper
+- platform: time
+  at: !input off_time_manual
+  id: offTimeManual
+
+variables:
+  off_delay: !input off_delay
+  off_delay_rand: '{{ range(0, off_delay.get("hours", 0) * 3600 + off_delay.get("minutes", 0) * 60 + off_delay.get("seconds", 0)) | random }}'
+  off_time_helper: !input off_time_helper
+  off_trigger: !input off_trigger
+  on_delay: !input on_delay
+  on_delay_rand: '{{ range(0, on_delay.get("hours", 0) * 3600 + on_delay.get("minutes", 0) * 60 + on_delay.get("seconds", 0)) | random }}'
+  on_time_helper: !input on_time_helper
+  on_trigger: !input on_trigger
+
+condition:
+- condition: state
+  entity_id: !input zone
+  state: "0"
+
+action:
+- choose:
+  - conditions:
+    - condition: or
+      conditions:
+      - condition: template
+        value_template: '{{ trigger.id == "onElevationHelper" and on_trigger == "elevation" and on_elevation_helper != None }}'
+      - condition: template
+        value_template: '{{ trigger.id == "onElevationManual" and on_trigger == "elevation" and on_elevation_helper == None }}'
+      - condition: template
+        value_template: '{{ trigger.id == "onTimeHelper" and on_trigger == "time" and on_time_helper != None }}'
+      - condition: template
+        value_template: '{{ trigger.id == "onTimeManual" and on_trigger == "time" and on_time_helper == None }}'
+    sequence:
+    - delay:
+        seconds: '{{ on_delay_rand }}'
+    - service: light.turn_on
+      target: { entity_id: !input lights }
+  - conditions:
+    - condition: or
+      conditions:
+      - condition: template
+        value_template: '{{ trigger.id == "offElevationHelper" and off_trigger == "elevation" and off_elevation_helper != None }}'
+      - condition: template
+        value_template: '{{ trigger.id == "offElevationManual" and off_trigger == "elevation" and off_elevation_helper == None }}'
+      - condition: template
+        value_template: '{{ trigger.id == "offTimeHelper" and off_trigger == "time" and off_time_helper != None }}'
+      - condition: template
+        value_template: '{{ trigger.id == "offTimeManual" and off_trigger == "time" and off_time_helper == None }}'
+    sequence:
+    - delay:
+        seconds: '{{ off_delay_rand }}'
+    - service: light.turn_off
+      target: { entity_id: !input lights }
