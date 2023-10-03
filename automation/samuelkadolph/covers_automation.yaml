@@ -1,0 +1,180 @@
+blueprint:
+  name: Covers Automation
+  description: Automatically close and open covers based on sun elevation and/or time.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/covers_automation.yaml
+  input:
+    close_trigger:
+      name: Close Trigger
+      description: What do you want to trigger closing the covers?
+      default: sun
+      selector:
+        select: &trigger-select
+          mode: dropdown
+          options:
+          - label: "Sun Elevation"
+            value: "sun"
+          - label: "Time"
+            value: "time"
+          - label: "None"
+            value: "none"
+    close_elevation_helper:
+      name: Close Sun Elevation Helper
+      description: Use a helper or leave empty to specify the elevation below.
+      default:
+      selector: &elevation-helper-selector
+        entity:
+          filter:
+          - domain: input_number
+    close_elevation_manual:
+      name: Close Sun Elevation
+      description: What elevation of the sun should close the covers?
+      default: 0.0
+      selector: &elevation-manual-selector
+        number:
+          max: 5.0
+          min: -18.0
+          step: 0.5
+          unit_of_measurement: °
+          mode: slider
+    close_time_helper:
+      name: Close Time Helper
+      description: Use a helper or leave empty to specify the time below.
+      default:
+      selector: &time-helper-selector
+        entity:
+          filter:
+          - domain: input_datetime
+          - domain: sensor
+            device_class: timestamp
+    close_time_manual:
+      name: Close Time
+      description: What time of day should close the covers?
+      default: '20:00:00'
+      selector:
+        time:
+    close_conditions:
+      name: Close Conditions
+      description: What other conditions should be checked before closing the covers?
+      default: []
+      selector:
+        condition:
+    open_trigger:
+      name: Open Trigger
+      description: What do you want to trigger closing the covers?
+      default: time
+      selector:
+        select: *trigger-select
+    open_elevation_helper:
+      name: Open Sun Elevation Helper
+      description: Use a helper or leave empty to specify the elevation below.
+      default:
+      selector: *elevation-helper-selector
+    open_elevation_manual:
+      name: Open Sun Elevation
+      description: What elevation of the sun should open the covers?
+      default: 0.0
+      selector: *elevation-manual-selector
+    open_time_helper:
+      name: Open Time Helper
+      description: Use a helper or leave empty to specify the time below.
+      default:
+      selector: *time-helper-selector
+    open_time_manual:
+      name: Open Time
+      description: What time of day should open the covers?
+      default: '06:00:00'
+      selector:
+        time:
+    open_conditions:
+      name: Open Conditions
+      description: What other conditions should be checked before opening the covers?
+      default: []
+      selector:
+        condition:
+    covers:
+      name: Covers
+      description: Which covers to automatically close and open
+      selector:
+        entity:
+          domain: cover
+          multiple: true
+
+mode: single
+
+trigger_variables:
+  close_elevation_helper: !input close_elevation_helper
+  close_elevation_manual: !input close_elevation_manual
+  open_elevation_helper: !input open_elevation_helper
+  open_elevation_manual: !input open_elevation_manual
+
+trigger:
+- platform: template
+  value_template: '{{ close_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(close_elevation_helper) | float) }}'
+  id: closeElevationHelper
+- platform: template
+  value_template: '{{ close_elevation_helper == None and state_attr("sun.sun", "elevation") < close_elevation_manual }}'
+  id: closeElevationManual
+- platform: time
+  at: !input close_time_helper
+  id: closeTimeHelper
+- platform: time
+  at: !input close_time_manual
+  id: closeTimeManual
+- platform: template
+  value_template: '{{ open_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(open_elevation_helper) | float) }}'
+  id: openElevationHelper
+- platform: template
+  value_template: '{{ open_elevation_helper == None and state_attr("sun.sun", "elevation") > open_elevation_manual }}'
+  id: openElevationManual
+- platform: time
+  at: !input open_time_helper
+  id: openTimeHelper
+- platform: time
+  at: !input open_time_manual
+  id: openTimeManual
+
+variables:
+  close_time_helper: !input close_time_helper
+  close_trigger: !input close_trigger
+  open_time_helper: !input open_time_helper
+  open_trigger: !input open_trigger
+
+action:
+- choose:
+  - conditions:
+    - condition: and
+      conditions:
+      - condition: !input close_conditions
+      - condition: or
+        conditions:
+        - condition: template
+          value_template: '{{ trigger.id == "closeElevationHelper" and close_trigger == "elevation" and close_elevation_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "closeElevationManual" and close_trigger == "elevation" and close_elevation_helper == None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "closeTimeHelper" and close_trigger == "time" and close_time_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "closeTimeManual" and close_trigger == "time" and close_time_helper == None }}'
+    sequence:
+    - service: cover.close_cover
+      target: { entity_id: !input covers }
+
+  - conditions:
+    - condition: and
+      conditions:
+      - condition: !input open_conditions
+      - condition: or
+        conditions:
+        - condition: template
+          value_template: '{{ trigger.id == "openElevationHelper" and open_trigger == "elevation" and open_elevation_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "openElevationManual" and open_trigger == "elevation" and open_elevation_helper == None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "openTimeHelper" and open_trigger == "time" and open_time_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "openTimeManual" and open_trigger == "time" and open_time_helper == None }}'
+    sequence:
+    - service: cover.open_cover
+      target: { entity_id: !input covers }
