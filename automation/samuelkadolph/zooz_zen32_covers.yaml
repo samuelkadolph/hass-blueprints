@@ -98,7 +98,7 @@ trigger:
 variables:
   controller: !input controller
   key: !input key
-  key_entity_id: '{{ device_entities(controller) | select("search", "button_" + (int(key) % 5 + 1) | string + "_indication") | first }}'
+  key_led_param: '{{ int(key) % 5 + 1 }}'
   led_enable: !input led_enable
   state_variable: !input state_variable
   state: '{{ int(states(state_variable)) }}'
@@ -119,8 +119,9 @@ action:
     - condition: template
       value_template: '{{ led_enable }}'
     sequence:
-    - service: switch.turn_on
-      target: { entity_id: '{{ key_entity_id }}' }
+    - service: zwave_js.set_config_parameter
+      data: { parameter: '{{ key_led_param }}', value: 3 }
+      target: { device_id: '{{ controller }}' }
 
   - conditions:
     - condition: trigger
@@ -128,8 +129,9 @@ action:
     - condition: template
       value_template: '{{ led_enable }}'
     sequence:
-    - service: switch.turn_off
-      target: { entity_id: '{{ key_entity_id }}' }
+    - service: zwave_js.set_config_parameter
+      data: { parameter: '{{ key_led_param }}', value: 2 }
+      target: { device_id: '{{ controller }}' }
 
   - conditions:
     - condition: trigger
