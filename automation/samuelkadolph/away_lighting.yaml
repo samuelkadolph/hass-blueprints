@@ -8,13 +8,13 @@ blueprint:
     on_trigger:
       name: On Trigger
       description: What do you want to trigger turning the lights on?
-      default: sun
+      default: elevation
       selector:
         select: &trigger-select
           mode: dropdown
           options:
           - label: "Sun Elevation"
-            value: "sun"
+            value: "elevation"
           - label: "Time"
             value: "time"
           - label: "None"
