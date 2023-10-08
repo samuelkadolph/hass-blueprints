@@ -1,0 +1,203 @@
+blueprint:
+  name: Automaton
+  description: Generical automation to execute sets of actions when triggered by the Sun elevation or time.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/automaton.yaml
+  input:
+    first_trigger:
+      name: First Trigger
+      description: What should trigger the first set of actions?
+      default: elevation_below
+      selector:
+        select: &trigger-select
+          mode: dropdown
+          options:
+          - label: "Sun Elevation Above"
+            value: "elevation_above"
+          - label: "Sun Elevation Below"
+            value: "elevation_below"
+          - label: "Time"
+            value: "time"
+          - label: "None"
+            value: "none"
+    first_elevation_helper:
+      name: First Sun Elevation Helper
+      description: Use a helper or leave empty to specify the elevation below.
+      default:
+      selector: &elevation-helper-selector
+        entity:
+          filter:
+          - domain: input_number
+    first_elevation_manual:
+      name: First Sun Elevation
+      description: What elevation of the Sun should trigger the first set of actions?
+      default: 0.0
+      selector: &elevation-manual-selector
+        number:
+          max: 5.0
+          min: -18.0
+          step: 0.5
+          unit_of_measurement: °
+          mode: slider
+    first_time_helper:
+      name: First Time Helper
+      description: Use a helper or leave empty to specify the time below.
+      default:
+      selector: &time-helper-selector
+        entity:
+          filter:
+          - domain: input_datetime
+          - domain: sensor
+            device_class: timestamp
+    first_time_manual:
+      name: First Time
+      description: When should we trigger the first set of actions?
+      default: '00:00:00'
+      selector:
+        time:
+    first_conditions:
+      name: First Conditions
+      description: What conditions should be checked before running the first set of actions?
+      default: []
+      selector:
+        condition:
+    first_actions:
+      name: First Actions
+      description: What should we do when the first trigger occurs?
+      default: []
+      selector:
+        action:
+    second_trigger:
+      name: Second Trigger
+      description: What should trigger the second set of actions?
+      default: time
+      selector:
+        select: *trigger-select
+    second_elevation_helper:
+      name: Second Sun Elevation Helper
+      description: Use a helper or leave empty to specify the elevation below.
+      default:
+      selector: *elevation-helper-selector
+    second_elevation_manual:
+      name: Second Sun Elevation
+      description: What elevation of the Sun should trigger the second set of actions?
+      default: 0.0
+      selector: *elevation-manual-selector
+    second_time_helper:
+      name: Second Time Helper
+      description: Use a helper or leave empty to specify the time below.
+      default:
+      selector: *time-helper-selector
+    second_time_manual:
+      name: Second Time
+      description: When should we trigger the second set of actions?
+      default: '00:00:00'
+      selector:
+        time:
+    second_conditions:
+      name: Second Conditions
+      description: What conditions should be checked before running the second set of actions?
+      default: []
+      selector:
+        condition:
+    second_actions:
+      name: Second Actions
+      description: What should we do when the second trigger occurs?
+      default: []
+      selector:
+        action:
+
+mode: single
+
+trigger_variables:
+  first_elevation_helper: !input first_elevation_helper
+  first_elevation_manual: !input first_elevation_manual
+  second_elevation_helper: !input second_elevation_helper
+  second_elevation_manual: !input second_elevation_manual
+
+trigger:
+- platform: template
+  value_template: '{{ first_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(first_elevation_helper) | float) }}'
+  id: firstElevationAboveHelper
+- platform: template
+  value_template: '{{ first_elevation_helper == None and state_attr("sun.sun", "elevation") > first_elevation_manual }}'
+  id: firstElevationAboveManual
+- platform: template
+  value_template: '{{ first_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(first_elevation_helper) | float) }}'
+  id: firstElevationBelowHelper
+- platform: template
+  value_template: '{{ first_elevation_helper == None and state_attr("sun.sun", "elevation") < first_elevation_manual }}'
+  id: firstElevationBelowManual
+- platform: time
+  at: !input first_time_helper
+  id: firstTimeHelper
+- platform: time
+  at: !input first_time_manual
+  id: firstTimeManual
+- platform: template
+  value_template: '{{ second_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(second_elevation_helper) | float) }}'
+  id: secondElevationAboveHelper
+- platform: template
+  value_template: '{{ second_elevation_helper == None and state_attr("sun.sun", "elevation") > second_elevation_manual }}'
+  id: secondElevationAboveManual
+- platform: template
+  value_template: '{{ second_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(second_elevation_helper) | float) }}'
+  id: secondElevationBelowHelper
+- platform: template
+  value_template: '{{ second_elevation_helper == None and state_attr("sun.sun", "elevation") < second_elevation_manual }}'
+  id: secondElevationBelowManual
+- platform: time
+  at: !input second_time_helper
+  id: secondTimeHelper
+- platform: time
+  at: !input second_time_manual
+  id: secondTimeManual
+
+variables:
+  first_time_helper: !input first_time_helper
+  first_trigger: !input first_trigger
+  second_time_helper: !input second_time_helper
+  second_trigger: !input second_trigger
+
+action:
+- choose:
+  - conditions:
+    - condition: and
+      conditions:
+      - condition: !input first_conditions
+      - condition: or
+        conditions:
+        - condition: template
+          value_template: '{{ trigger.id == "firstElevationAboveHelper" and first_trigger == "elevation_above" and first_elevation_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "firstElevationAboveManual" and first_trigger == "elevation_above" and first_elevation_helper == None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "firstElevationBelowHelper" and first_trigger == "elevation_below" and first_elevation_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "firstElevationBelowManual" and first_trigger == "elevation_below" and first_elevation_helper == None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "firstTimeHelper" and first_trigger == "time" and first_time_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "firstTimeManual" and first_trigger == "time" and first_time_helper == None }}'
+    sequence: !input first_actions
+
+  - conditions:
+    - condition: and
+      conditions:
+      - condition: !input second_conditions
+      - condition: or
+        conditions:
+        - condition: template
+          value_template: '{{ trigger.id == "secondElevationAboveHelper" and second_trigger == "elevation_above" and second_elevation_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "secondElevationAboveManual" and second_trigger == "elevation_above" and second_elevation_helper == None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "secondElevationBelowHelper" and second_trigger == "elevation_below" and second_elevation_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "secondElevationBelowManual" and second_trigger == "elevation_below" and second_elevation_helper == None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "secondTimeHelper" and second_trigger == "time" and second_time_helper != None }}'
+        - condition: template
+          value_template: '{{ trigger.id == "secondTimeManual" and second_trigger == "time" and second_time_helper == None }}'
+    sequence: !input second_actions
