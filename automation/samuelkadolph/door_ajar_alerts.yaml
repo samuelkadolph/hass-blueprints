@@ -1,0 +1,61 @@
+blueprint:
+  name: Door Ajar Alerts
+  description: Critical push notifications and Alexa annoucements when a door is left open.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/door_ajar_alerts.yaml
+  input:
+    door:
+      name: Door
+      description: What is the name of the door for the alert?
+      selector:
+        text:
+    door_sensors:
+      name: Door Sensors
+      description: Which sensors should be monitored?
+      selector:
+        entity:
+          domain: binary_sensor
+          multiple: true
+    open_for:
+      name: Open For
+      description: How long does the door have to be open before triggering the alert?
+      default: { minutes: 5 }
+      selector:
+        duration:
+    delay:
+      name: Repeat Delay
+      description: How long to wait before repeating the alert?
+      default: { minutes: 5 }
+      selector:
+        duration:
+
+mode: single
+max_exceeded: silent
+
+variables:
+  door: !input door
+
+trigger:
+- platform: state
+  entity_id: !input door_sensors
+  to: 'on'
+  for: !input open_for
+action:
+- repeat:
+    while:
+    - condition: state
+      entity_id: !input door_sensors
+      match: any
+      state: 'on'
+    sequence:
+    - service: notify.notify
+      data:
+        data: { push: { sound: { name: 'Default', critical: 1, volume: 1 } } }
+        title: Door Left Open
+        message: '{{ door }} door has been left open!'
+    - service: notify.alexa_media_everywhere
+      data:
+        data: { type: 'announce' }
+        message: 'Alert! {{ door }} door has been left open!'
+    - delay: !input delay

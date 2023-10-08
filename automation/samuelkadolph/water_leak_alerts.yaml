@@ -1,22 +1,28 @@
 blueprint:
   name: Water Leak Alerts
-  description: Send notifications when a water leak is detected
+  description: Critical push notifications and Alexa annoucements when a water leak is detected.
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/water_leak_alerts.yaml
   input:
     area:
       name: Area
-      description: Name of the area the sensors are in for alerts
+      description: What is the name of the area for the alert?
       selector:
         text:
     leak_sensors:
       name: Leak Sensors
-      description: Which sensors to monitor
+      description: Which sensors should be monitored?
       selector:
         entity:
           domain: binary_sensor
           multiple: true
+    delay:
+      name: Repeat Delay
+      description: How long to wait before repeating the alert?
+      default: { minutes: 2 }
+      selector:
+        duration:
 
 mode: single
 max_exceeded: silent
@@ -38,18 +44,11 @@ action:
     sequence:
     - service: notify.notify
       data:
-        data:
-          push:
-            sound:
-              name: Default
-              critical: 1
-              volume: 1
+        data: { push: { sound: { name: 'Default', critical: 1, volume: 1 } } }
         title: WATER LEAK!
-        message: Water detected in {{ area }}!
+        message: 'Water detected in {{ area }}!'
     - service: notify.alexa_media_everywhere
       data:
-        data:
-          type: announce
-        message: WATER LEAK! Water detected in {{ area }}!
-    - delay:
-        minutes: 2
+        data: { type: 'announce' }
+        message: 'WATER LEAK! Water detected in {{ area }}!'
+    - delay: !input delay
