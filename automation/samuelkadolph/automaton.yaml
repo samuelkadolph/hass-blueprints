@@ -53,7 +53,7 @@ blueprint:
     first_time_manual:
       name: First Time
       description: When should we trigger the first set of actions?
-      default: '00:00:00'
+      default:
       selector:
         time:
     first_conditions:
@@ -92,7 +92,7 @@ blueprint:
     second_time_manual:
       name: Second Time
       description: When should we trigger the second set of actions?
-      default: '00:00:00'
+      default:
       selector:
         time:
     second_conditions:
@@ -113,40 +113,43 @@ mode: single
 trigger_variables:
   first_elevation_helper: !input first_elevation_helper
   first_elevation_manual: !input first_elevation_manual
+  first_trigger: !input first_trigger
   second_elevation_helper: !input second_elevation_helper
   second_elevation_manual: !input second_elevation_manual
+  second_trigger: !input second_trigger
 
 trigger:
 - platform: template
-  value_template: '{{ first_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(first_elevation_helper) | float) }}'
-  id: firstElevationAboveHelper
+  value_template: '{{ first_trigger == "elevation_above" and first_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(first_elevation_helper) | float) }}'
+  id: elevation
 - platform: template
-  value_template: '{{ first_elevation_helper == None and state_attr("sun.sun", "elevation") > first_elevation_manual }}'
-  id: firstElevationAboveManual
+  value_template: '{{ first_trigger == "elevation_above" and first_elevation_helper == None and state_attr("sun.sun", "elevation") > first_elevation_manual }}'
+  id: elevation
 - platform: template
-  value_template: '{{ first_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(first_elevation_helper) | float) }}'
-  id: firstElevationBelowHelper
+  value_template: '{{ first_trigger == "elevation_below" and first_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(first_elevation_helper) | float) }}'
+  id: elevation
 - platform: template
-  value_template: '{{ first_elevation_helper == None and state_attr("sun.sun", "elevation") < first_elevation_manual }}'
-  id: firstElevationBelowManual
+  value_template: '{{ first_trigger == "elevation_below" and first_elevation_helper == None and state_attr("sun.sun", "elevation") < first_elevation_manual }}'
+  id: elevation
 - platform: time
   at: !input first_time_helper
   id: firstTimeHelper
 - platform: time
   at: !input first_time_manual
   id: firstTimeManual
+
 - platform: template
-  value_template: '{{ second_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(second_elevation_helper) | float) }}'
-  id: secondElevationAboveHelper
+  value_template: '{{ second_trigger == "elevation_above" and second_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(second_elevation_helper) | float) }}'
+  id: elevation
 - platform: template
-  value_template: '{{ second_elevation_helper == None and state_attr("sun.sun", "elevation") > second_elevation_manual }}'
-  id: secondElevationAboveManual
+  value_template: '{{ second_trigger == "elevation_above" and second_elevation_helper == None and state_attr("sun.sun", "elevation") > second_elevation_manual }}'
+  id: elevation
 - platform: template
-  value_template: '{{ second_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(second_elevation_helper) | float) }}'
-  id: secondElevationBelowHelper
+  value_template: '{{ second_trigger == "elevation_below" and second_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(second_elevation_helper) | float) }}'
+  id: elevation
 - platform: template
-  value_template: '{{ second_elevation_helper == None and state_attr("sun.sun", "elevation") < second_elevation_manual }}'
-  id: secondElevationBelowManual
+  value_template: '{{ second_trigger == "elevation_below" and second_elevation_helper == None and state_attr("sun.sun", "elevation") < second_elevation_manual }}'
+  id: elevation
 - platform: time
   at: !input second_time_helper
   id: secondTimeHelper
@@ -169,13 +172,7 @@ action:
       - condition: or
         conditions:
         - condition: template
-          value_template: '{{ trigger.id == "firstElevationAboveHelper" and first_trigger == "elevation_above" and first_elevation_helper != None }}'
-        - condition: template
-          value_template: '{{ trigger.id == "firstElevationAboveManual" and first_trigger == "elevation_above" and first_elevation_helper == None }}'
-        - condition: template
-          value_template: '{{ trigger.id == "firstElevationBelowHelper" and first_trigger == "elevation_below" and first_elevation_helper != None }}'
-        - condition: template
-          value_template: '{{ trigger.id == "firstElevationBelowManual" and first_trigger == "elevation_below" and first_elevation_helper == None }}'
+          value_template: '{{ trigger.id == "elevation" }}'
         - condition: template
           value_template: '{{ trigger.id == "firstTimeHelper" and first_trigger == "time" and first_time_helper != None }}'
         - condition: template
@@ -189,13 +186,7 @@ action:
       - condition: or
         conditions:
         - condition: template
-          value_template: '{{ trigger.id == "secondElevationAboveHelper" and second_trigger == "elevation_above" and second_elevation_helper != None }}'
-        - condition: template
-          value_template: '{{ trigger.id == "secondElevationAboveManual" and second_trigger == "elevation_above" and second_elevation_helper == None }}'
-        - condition: template
-          value_template: '{{ trigger.id == "secondElevationBelowHelper" and second_trigger == "elevation_below" and second_elevation_helper != None }}'
-        - condition: template
-          value_template: '{{ trigger.id == "secondElevationBelowManual" and second_trigger == "elevation_below" and second_elevation_helper == None }}'
+          value_template: '{{ trigger.id == "elevation" }}'
         - condition: template
           value_template: '{{ trigger.id == "secondTimeHelper" and second_trigger == "time" and second_time_helper != None }}'
         - condition: template

@@ -51,7 +51,7 @@ blueprint:
     on_time_manual:
       name: On Time
       description: What time of day should turn on the lights?
-      default: '20:00:00'
+      default:
       selector:
         time:
     on_delay:
@@ -90,7 +90,7 @@ blueprint:
     off_time_manual:
       name: Off Time
       description: What time of day should the lights turn off?
-      default: '22:00:00'
+      default:
       selector:
         time:
     off_delay:
@@ -124,15 +124,17 @@ mode: single
 trigger_variables:
   off_elevation_helper: !input off_elevation_helper
   off_elevation_manual: !input off_elevation_manual
+  off_trigger: !input off_trigger
   on_elevation_helper: !input on_elevation_helper
   on_elevation_manual: !input on_elevation_manual
+  on_trigger: !input on_trigger
 
 trigger:
 - platform: template
-  value_template: '{{ on_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(on_elevation_helper) | float) }}'
+  value_template: '{{ on_trigger == "elevation" and on_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(on_elevation_helper) | float) }}'
   id: onElevationHelper
 - platform: template
-  value_template: '{{ on_elevation_helper == None and state_attr("sun.sun", "elevation") < on_elevation_manual }}'
+  value_template: '{{ on_trigger == "elevation" and on_elevation_helper == None and state_attr("sun.sun", "elevation") < on_elevation_manual }}'
   id: onElevationManual
 - platform: time
   at: !input on_time_helper
@@ -140,11 +142,12 @@ trigger:
 - platform: time
   at: !input on_time_manual
   id: onTimeManual
+
 - platform: template
-  value_template: '{{ off_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(off_elevation_helper) | float) }}'
+  value_template: '{{ off_trigger == "elevation" and off_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(off_elevation_helper) | float) }}'
   id: offElevationHelper
 - platform: template
-  value_template: '{{ off_elevation_helper == None and state_attr("sun.sun", "elevation") > off_elevation_manual }}'
+  value_template: '{{ off_trigger == "elevation" and off_elevation_helper == None and state_attr("sun.sun", "elevation") > off_elevation_manual }}'
   id: offElevationManual
 - platform: time
   at: !input off_time_helper
@@ -177,9 +180,9 @@ action:
       - condition: or
         conditions:
         - condition: template
-          value_template: '{{ trigger.id == "onElevationHelper" and on_trigger == "elevation" and on_elevation_helper != None }}'
+          value_template: '{{ trigger.id == "onElevationHelper" }}'
         - condition: template
-          value_template: '{{ trigger.id == "onElevationManual" and on_trigger == "elevation" and on_elevation_helper == None }}'
+          value_template: '{{ trigger.id == "onElevationManual" }}'
         - condition: template
           value_template: '{{ trigger.id == "onTimeHelper" and on_trigger == "time" and on_time_helper != None }}'
         - condition: template
@@ -197,9 +200,9 @@ action:
       - condition: or
         conditions:
         - condition: template
-          value_template: '{{ trigger.id == "offElevationHelper" and off_trigger == "elevation" and off_elevation_helper != None }}'
+          value_template: '{{ trigger.id == "offElevationHelper" }}'
         - condition: template
-          value_template: '{{ trigger.id == "offElevationManual" and off_trigger == "elevation" and off_elevation_helper == None }}'
+          value_template: '{{ trigger.id == "offElevationManual" }}'
         - condition: template
           value_template: '{{ trigger.id == "offTimeHelper" and off_trigger == "time" and off_time_helper != None }}'
         - condition: template
