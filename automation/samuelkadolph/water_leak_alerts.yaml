@@ -34,6 +34,7 @@ trigger:
 - platform: state
   entity_id: !input leak_sensors
   to: 'on'
+
 action:
 - repeat:
     while:

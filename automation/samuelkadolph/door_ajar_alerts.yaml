@@ -41,6 +41,7 @@ trigger:
   entity_id: !input door_sensors
   to: 'on'
   for: !input open_for
+
 action:
 - repeat:
     while:
