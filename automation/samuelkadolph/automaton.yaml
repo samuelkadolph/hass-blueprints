@@ -121,16 +121,16 @@ trigger_variables:
 trigger:
 - platform: template
   value_template: '{{ first_trigger == "elevation_above" and first_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(first_elevation_helper) | float) }}'
-  id: elevation
+  id: firstElevation
 - platform: template
   value_template: '{{ first_trigger == "elevation_above" and first_elevation_helper == None and state_attr("sun.sun", "elevation") > first_elevation_manual }}'
-  id: elevation
+  id: firstElevation
 - platform: template
   value_template: '{{ first_trigger == "elevation_below" and first_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(first_elevation_helper) | float) }}'
-  id: elevation
+  id: firstElevation
 - platform: template
   value_template: '{{ first_trigger == "elevation_below" and first_elevation_helper == None and state_attr("sun.sun", "elevation") < first_elevation_manual }}'
-  id: elevation
+  id: firstElevation
 - platform: time
   at: !input first_time_helper
   id: firstTimeHelper
@@ -140,16 +140,16 @@ trigger:
 
 - platform: template
   value_template: '{{ second_trigger == "elevation_above" and second_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(second_elevation_helper) | float) }}'
-  id: elevation
+  id: secondElevation
 - platform: template
   value_template: '{{ second_trigger == "elevation_above" and second_elevation_helper == None and state_attr("sun.sun", "elevation") > second_elevation_manual }}'
-  id: elevation
+  id: secondElevation
 - platform: template
   value_template: '{{ second_trigger == "elevation_below" and second_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(second_elevation_helper) | float) }}'
-  id: elevation
+  id: secondElevation
 - platform: template
   value_template: '{{ second_trigger == "elevation_below" and second_elevation_helper == None and state_attr("sun.sun", "elevation") < second_elevation_manual }}'
-  id: elevation
+  id: secondElevation
 - platform: time
   at: !input second_time_helper
   id: secondTimeHelper
@@ -166,29 +166,25 @@ variables:
 action:
 - choose:
   - conditions:
-    - condition: and
+    - condition: !input first_conditions
+    - condition: or
       conditions:
-      - condition: !input first_conditions
-      - condition: or
-        conditions:
-        - condition: template
-          value_template: '{{ trigger.id == "elevation" }}'
-        - condition: template
-          value_template: '{{ trigger.id == "firstTimeHelper" and first_trigger == "time" and first_time_helper != None }}'
-        - condition: template
-          value_template: '{{ trigger.id == "firstTimeManual" and first_trigger == "time" and first_time_helper == None }}'
+      - condition: template
+        value_template: '{{ trigger.id == "firstElevation" }}'
+      - condition: template
+        value_template: '{{ trigger.id == "firstTimeHelper" and first_trigger == "time" and first_time_helper != None }}'
+      - condition: template
+        value_template: '{{ trigger.id == "firstTimeManual" and first_trigger == "time" and first_time_helper == None }}'
     sequence: !input first_actions
 
   - conditions:
-    - condition: and
+    - condition: !input second_conditions
+    - condition: or
       conditions:
-      - condition: !input second_conditions
-      - condition: or
-        conditions:
-        - condition: template
-          value_template: '{{ trigger.id == "elevation" }}'
-        - condition: template
-          value_template: '{{ trigger.id == "secondTimeHelper" and second_trigger == "time" and second_time_helper != None }}'
-        - condition: template
-          value_template: '{{ trigger.id == "secondTimeManual" and second_trigger == "time" and second_time_helper == None }}'
+      - condition: template
+        value_template: '{{ trigger.id == "secondElevation" }}'
+      - condition: template
+        value_template: '{{ trigger.id == "secondTimeHelper" and second_trigger == "time" and second_time_helper != None }}'
+      - condition: template
+        value_template: '{{ trigger.id == "secondTimeManual" and second_trigger == "time" and second_time_helper == None }}'
     sequence: !input second_actions
