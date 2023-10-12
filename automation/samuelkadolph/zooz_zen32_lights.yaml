@@ -12,6 +12,7 @@ blueprint:
         device:
           filter:
           - { manufacturer: Zooz, model: ZEN32 }
+          - { manufacturer: Zooz, model: ZEN32 800LR }
     key:
       name: Key
       default: '005'
