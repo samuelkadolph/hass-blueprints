@@ -1,0 +1,60 @@
+blueprint:
+  name: Remote Automation
+  description: Execute sets of actions when a Remote turns on or off.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/remote_automation.yaml
+  input:
+    remote:
+      name: Remote
+      description: Which remote TODO
+      selector:
+        entity:
+          domain: remote
+    on_conditions:
+      name: On Conditions
+      description: What other conditions should be checked before running the on actions?
+      default: []
+      selector:
+        condition:
+    on_actions:
+      name: On Actions
+      description: What should we do when the remote turns on?
+      default: []
+      selector:
+        action:
+    off_conditions:
+      name: Off Conditions
+      description: What other conditions should be checked before running the off actions?
+      default: []
+      selector:
+        condition:
+    off_actions:
+      name: Off Actions
+      description: What should we do when the remote turns off?
+      default: []
+      selector:
+        action:
+
+mode: single
+
+trigger:
+- platform: state
+  entity_id: !input remote
+  to: ['on', 'off']
+
+action:
+- choose:
+  - conditions:
+    - condition: !input on_conditions
+    - condition: state
+      entity_id: !input remote
+      state: 'on'
+    sequence: !input on_actions
+
+  - conditions:
+    - condition: !input off_conditions
+    - condition: state
+      entity_id: !input remote
+      state: 'off'
+    sequence: !input off_actions
