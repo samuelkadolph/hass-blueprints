@@ -1,0 +1,27 @@
+blueprint:
+  name: Reload Blueprints
+  description: Automatically reload blueprints on file changes.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/reload_blueprints.yaml
+  input: {}
+
+mode: single
+max_exceeded: silent
+
+trigger:
+- platform: event
+  event_type: folder_watcher
+
+action:
+- choose:
+  - conditions:
+    - condition: template
+      value_template: '{{ "blueprints/automation" in trigger.event.data.folder }}'
+    sequence:
+    - service: automation.reload
+  - conditions:
+    - condition: template
+      value_template: '{{ "blueprints/script" in trigger.event.data.folder }}'
+    sequence:
+    - service: script.reload
