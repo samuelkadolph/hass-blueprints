@@ -33,14 +33,14 @@ blueprint:
 mode: single
 max_exceeded: silent
 
-variables:
-  door: !input door
-
 trigger:
 - platform: state
   entity_id: !input door_sensors
   to: 'on'
   for: !input open_for
+
+variables:
+  door: !input door
 
 action:
 - repeat:

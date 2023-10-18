@@ -27,13 +27,13 @@ blueprint:
 mode: single
 max_exceeded: silent
 
-variables:
-  area: !input area
-
 trigger:
 - platform: state
   entity_id: !input leak_sensors
   to: 'on'
+
+variables:
+  area: !input area
 
 action:
 - repeat:
