@@ -39,7 +39,7 @@ blueprint:
         boolean:
     state_variable:
       name: State Variable
-      description: >
+      description: |
         This automation requires a Number helper to store the current state of the shade.
         Please create one that goes from 0 to 4 and select it here.
         Must only be shared with automations using the same set of shades.
@@ -123,21 +123,18 @@ variables:
 action:
 - choose:
   - conditions:
-    - condition: trigger
-      id: reset
+    - '{{ trigger.id == "reset" }}'
     sequence:
     - service: input_number.set_value
       data: { value: 0 }
       target: { entity_id: !input state_variable }
 
   - conditions:
-    - condition: trigger
-      id: upPressed
+    - '{{ trigger.id == "upPressed" }}'
     sequence:
     - choose:
       - conditions:
-        - condition: template
-          value_template: '{{ state in [0, 2, 4] }}'
+        - '{{ state in [0, 2, 4] }}'
         sequence:
         - service: cover.open_cover
           target: { entity_id: !input covers }
@@ -145,8 +142,7 @@ action:
           data: { value: 1 }
           target: { entity_id: !input state_variable }
       - conditions:
-        - condition: template
-          value_template: '{{ state == 3 }}'
+        - '{{ state == 3 }}'
         sequence:
         - service: cover.stop_cover
           target: { entity_id: !input covers }
@@ -155,12 +151,9 @@ action:
           target: { entity_id: !input state_variable }
 
   - conditions:
-    - condition: trigger
-      id: upHeldDown
-    - condition: template
-      value_template: '{{ paddle_hold }}'
-    - condition: template
-      value_template: '{{ state in [0, 2, 3, 4] }}'
+    - '{{ trigger.id == "upHeldDown" }}'
+    - '{{ paddle_hold }}'
+    - '{{ state in [0, 2, 3, 4] }}'
     sequence:
     - service: cover.open_cover
       target: { entity_id: !input covers }
@@ -169,12 +162,9 @@ action:
       target: { entity_id: !input state_variable }
 
   - conditions:
-    - condition: trigger
-      id: upReleased
-    - condition: template
-      value_template: '{{ paddle_hold }}'
-    - condition: template
-      value_template: '{{ state == 1 }}'
+    - '{{ trigger.id == "upReleased" }}'
+    - '{{ paddle_hold }}'
+    - '{{ state == 1 }}'
     sequence:
     - service: cover.stop_cover
       target: { entity_id: !input covers }
@@ -183,13 +173,11 @@ action:
       target: { entity_id: !input state_variable }
 
   - conditions:
-    - condition: trigger
-      id: downPressed
+    - '{{ trigger.id == "downPressed" }}'
     sequence:
     - choose:
       - conditions:
-        - condition: template
-          value_template: '{{ state in [0, 2, 4] }}'
+        - '{{ state in [0, 2, 4] }}'
         sequence:
         - service: cover.close_cover
           target: { entity_id: !input covers }
@@ -197,8 +185,7 @@ action:
           data: { value: 3 }
           target: { entity_id: !input state_variable }
       - conditions:
-        - condition: template
-          value_template: '{{ state == 1 }}'
+        - '{{ state == 1 }}'
         sequence:
         - service: cover.stop_cover
           target: { entity_id: !input covers }
@@ -207,12 +194,9 @@ action:
           target: { entity_id: !input state_variable }
 
   - conditions:
-    - condition: trigger
-      id: downHeldDown
-    - condition: template
-      value_template: '{{ paddle_hold }}'
-    - condition: template
-      value_template: '{{ state in [0, 1, 2, 4] }}'
+    - '{{ trigger.id == "downHeldDown" }}'
+    - '{{ paddle_hold }}'
+    - '{{ state in [0, 1, 2, 4] }}'
     sequence:
     - service: cover.close_cover
       target: { entity_id: !input covers }
@@ -221,12 +205,9 @@ action:
       target: { entity_id: !input state_variable }
 
   - conditions:
-    - condition: trigger
-      id: downReleased
-    - condition: template
-      value_template: '{{ paddle_hold }}'
-    - condition: template
-      value_template: '{{ state == 3 }}'
+    - '{{ trigger.id == "downReleased" }}'
+    - '{{ paddle_hold }}'
+    - '{{ state == 3 }}'
     sequence:
     - service: cover.stop_cover
       target: { entity_id: !input covers }

@@ -37,6 +37,12 @@ blueprint:
       default: true
       selector:
         boolean:
+    led_invert:
+      name: Invert LED
+      description: Invert LED state
+      default: false
+      selector:
+        boolean:
     subjects:
       name: Lights
       description: Which lights (or fans/switches) to control with the key
@@ -77,8 +83,11 @@ trigger:
 variables:
   controller: !input controller
   key: !input key
-  key_led_param: '{{ int(key) % 5 + 1 }}'
   led_enable: !input led_enable
+  led_invert: !input led_invert
+  led_off_value: '{{ led_invert and 3 or 2 }}'
+  led_on_value: '{{ led_invert and 2 or 3 }}'
+  led_param: '{{ int(key) % 5 + 1 }}'
   subjects: !input subjects
   fans: '{{ subjects | select("search", "^fan.") | list }}'
   lights: '{{ subjects | select("search", "^light.") | list }}'
@@ -87,30 +96,24 @@ variables:
 action:
 - choose:
   - conditions:
-    - condition: trigger
-      id: lightOn
-    - condition: template
-      value_template: '{{ led_enable }}'
+    - '{{ trigger.id == "lightOn" }}'
+    - '{{ led_enable }}'
     sequence:
     - service: zwave_js.set_config_parameter
-      data: { parameter: '{{ key_led_param }}', value: 3 }
+      data: { parameter: '{{ led_param }}', value: '{{ led_on_value }}' }
       target: { device_id: '{{ controller }}' }
 
   - conditions:
-    - condition: trigger
-      id: lightOff
-    - condition: template
-      value_template: '{{ led_enable }}'
+    - '{{ trigger.id == "lightOff" }}'
+    - '{{ led_enable }}'
     sequence:
     - service: zwave_js.set_config_parameter
-      data: { parameter: '{{ key_led_param }}', value: 2 }
+      data: { parameter: '{{ led_param }}', value: '{{ led_off_value }}' }
       target: { device_id: '{{ controller }}' }
 
   - conditions:
-    - condition: trigger
-      id: keyPressed
-    - condition: template
-      value_template: '{{ int(trigger.event.data.property_key) == int(key) }}'
+    - '{{ trigger.id == "keyPressed" }}'
+    - '{{ int(trigger.event.data.property_key) == int(key) }}'
     sequence:
     - if:
       - condition: state
@@ -125,11 +128,10 @@ action:
       - service: switch.turn_on
         target: { entity_id: '{{ switches }}' }
       - if:
-        - condition: template
-          value_template: '{{ led_enable }}'
+        - '{{ led_enable }}'
         then:
         - service: zwave_js.set_config_parameter
-          data: { parameter: '{{ key_led_param }}', value: 3 }
+          data: { parameter: '{{ led_param }}', value: '{{ led_on_value }}' }
           target: { device_id: '{{ controller }}' }
       else:
       - service: fan.turn_off
@@ -139,18 +141,15 @@ action:
       - service: switch.turn_off
         target: { entity_id: '{{ switches }}' }
       - if:
-        - condition: template
-          value_template: '{{ led_enable }}'
+        - '{{ led_enable }}'
         then:
         - service: zwave_js.set_config_parameter
-          data: { parameter: '{{ key_led_param }}', value: 2 }
+          data: { parameter: '{{ led_param }}', value: '{{ led_off_value }}' }
           target: { device_id: '{{ controller }}' }
 
   - conditions:
-    - condition: trigger
-      id: keyPressed2x
-    - condition: template
-      value_template: '{{ int(trigger.event.data.property_key) == int(key) }}'
+    - '{{ trigger.id == "keyPressed2x" }}'
+    - '{{ int(trigger.event.data.property_key) == int(key) }}'
     sequence:
     - service: fan.turn_on
       data: { percentage: 100 }
@@ -161,9 +160,8 @@ action:
     - service: switch.turn_on
       target: { entity_id: '{{ switches }}' }
     - if:
-      - condition: template
-        value_template: '{{ led_enable }}'
+      - '{{ led_enable }}'
       then:
       - service: zwave_js.set_config_parameter
-        data: { parameter: '{{ key_led_param }}', value: 3 }
+        data: { parameter: '{{ led_param }}', value: '{{ led_on_value }}' }
         target: { device_id: '{{ controller }}' }

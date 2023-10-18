@@ -162,19 +162,19 @@ variables:
 action:
 - choose:
   - conditions:
-    - condition: !input first_conditions
     - condition: or
       conditions:
       - '{{ trigger.id == "firstElevation" }}'
       - '{{ trigger.id == "firstTimeHelper" and first_trigger == "time" and first_time_helper != None }}'
       - '{{ trigger.id == "firstTimeManual" and first_trigger == "time" and first_time_helper == None }}'
+    - condition: !input first_conditions
     sequence: !input first_actions
 
   - conditions:
-    - condition: !input second_conditions
     - condition: or
       conditions:
       - '{{ trigger.id == "secondElevation" }}'
       - '{{ trigger.id == "secondTimeHelper" and second_trigger == "time" and second_time_helper != None }}'
       - '{{ trigger.id == "secondTimeManual" and second_trigger == "time" and second_time_helper == None }}'
+    - condition: !input second_conditions
     sequence: !input second_actions

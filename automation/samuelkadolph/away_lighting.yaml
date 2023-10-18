@@ -9,8 +9,8 @@ blueprint:
       name: On Trigger
       description: What do you want to trigger turning the lights on?
       default: elevation
-      selector:
-        select: &trigger-select
+      selector: &trigger-selector
+        select:
           mode: dropdown
           options:
           - label: "Sun Elevation"
@@ -52,26 +52,25 @@ blueprint:
       name: On Time
       description: What time of day should turn on the lights?
       default:
-      selector:
+      selector: &time-manual-selector
         time:
     on_delay:
       name: On Delay
       description: How long to delay turning on the lights? A random time between zero and this will be picked.
       default: { minutes: 30 }
-      selector:
+      selector: &delay-selector
         duration:
     on_conditions:
       name: On Conditions
       description: What other conditions should be checked before turning on the lights?
       default: []
-      selector:
+      selector: &conditions-selector
         condition:
     off_trigger:
       name: Off Trigger
       description: What do you want to trigger turning off the lights?
       default: time
-      selector:
-        select: *trigger-select
+      selector: *trigger-selector
     off_elevation_helper:
       name: Off Sun Elevation Helper
       description: Use a helper or leave empty to specify the elevation below.
@@ -91,20 +90,17 @@ blueprint:
       name: Off Time
       description: What time of day should the lights turn off?
       default:
-      selector:
-        time:
+      selector: *time-manual-selector
     off_delay:
       name: Off Delay
       description: How long to delay turning off the lights? A random time between zero and this will be picked.
       default: { minutes: 30 }
-      selector:
-        duration:
+      selector: *delay-selector
     off_conditions:
       name: Off Conditions
       description: What other conditions should be checked before turning off the lights?
       default: []
-      selector:
-        condition:
+      selector: *conditions-selector
     lights:
       name: Lights
       description: Which lights to turn on and off?
@@ -114,7 +110,7 @@ blueprint:
           multiple: true
     zone:
       name: Zone
-      description: Which zone must be empty to enable light control?
+      description: Which zone must be empty to enable away lighting?
       selector:
         entity:
           domain: zone
@@ -132,10 +128,10 @@ trigger_variables:
 trigger:
 - platform: template
   value_template: '{{ on_trigger == "elevation" and on_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(on_elevation_helper) | float) }}'
-  id: onElevationHelper
+  id: onElevation
 - platform: template
   value_template: '{{ on_trigger == "elevation" and on_elevation_helper == None and state_attr("sun.sun", "elevation") < on_elevation_manual }}'
-  id: onElevationManual
+  id: onElevation
 - platform: time
   at: !input on_time_helper
   id: onTimeHelper
@@ -145,10 +141,10 @@ trigger:
 
 - platform: template
   value_template: '{{ off_trigger == "elevation" and off_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(off_elevation_helper) | float) }}'
-  id: offElevationHelper
+  id: offElevation
 - platform: template
   value_template: '{{ off_trigger == "elevation" and off_elevation_helper == None and state_attr("sun.sun", "elevation") > off_elevation_manual }}'
-  id: offElevationManual
+  id: offElevation
 - platform: time
   at: !input off_time_helper
   id: offTimeHelper
@@ -174,19 +170,12 @@ condition:
 action:
 - choose:
   - conditions:
-    - condition: and
+    - condition: or
       conditions:
-      - condition: !input on_conditions
-      - condition: or
-        conditions:
-        - condition: template
-          value_template: '{{ trigger.id == "onElevationHelper" }}'
-        - condition: template
-          value_template: '{{ trigger.id == "onElevationManual" }}'
-        - condition: template
-          value_template: '{{ trigger.id == "onTimeHelper" and on_trigger == "time" and on_time_helper != None }}'
-        - condition: template
-          value_template: '{{ trigger.id == "onTimeManual" and on_trigger == "time" and on_time_helper == None }}'
+      - '{{ trigger.id == "onElevation" }}'
+      - '{{ trigger.id == "onTimeHelper" and on_trigger == "time" and on_time_helper != None }}'
+      - '{{ trigger.id == "onTimeManual" and on_trigger == "time" and on_time_helper == None }}'
+    - condition: !input on_conditions
     sequence:
     - delay:
         seconds: '{{ on_delay_rand }}'
@@ -194,19 +183,12 @@ action:
       target: { entity_id: !input lights }
 
   - conditions:
-    - condition: and
+    - condition: or
       conditions:
-      - condition: !input off_conditions
-      - condition: or
-        conditions:
-        - condition: template
-          value_template: '{{ trigger.id == "offElevationHelper" }}'
-        - condition: template
-          value_template: '{{ trigger.id == "offElevationManual" }}'
-        - condition: template
-          value_template: '{{ trigger.id == "offTimeHelper" and off_trigger == "time" and off_time_helper != None }}'
-        - condition: template
-          value_template: '{{ trigger.id == "offTimeManual" and off_trigger == "time" and off_time_helper == None }}'
+      - '{{ trigger.id == "offElevation" }}'
+      - '{{ trigger.id == "offTimeHelper" and off_trigger == "time" and off_time_helper != None }}'
+      - '{{ trigger.id == "offTimeManual" and off_trigger == "time" and off_time_helper == None }}'
+    - condition: !input off_conditions
     sequence:
     - delay:
         seconds: '{{ off_delay_rand }}'

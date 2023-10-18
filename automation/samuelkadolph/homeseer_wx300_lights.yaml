@@ -74,8 +74,7 @@ variables:
 action:
 - choose:
   - conditions:
-    - condition: trigger
-      id: upPressed
+    - '{{ trigger.id == "upPressed" }}'
     sequence:
     - service: fan.turn_on
       target: { entity_id: '{{ fans }}' }
@@ -85,8 +84,7 @@ action:
       target: { entity_id: '{{ switches }}' }
 
   - conditions:
-    - condition: trigger
-      id: downPressed
+    - '{{ trigger.id == "downPressed" }}'
     sequence:
     - service: fan.turn_off
       target: { entity_id: '{{ fans }}' }

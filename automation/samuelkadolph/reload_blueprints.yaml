@@ -16,12 +16,10 @@ trigger:
 action:
 - choose:
   - conditions:
-    - condition: template
-      value_template: '{{ "blueprints/automation" in trigger.event.data.folder }}'
+    - '{{ "blueprints/automation" in trigger.event.data.folder }}'
     sequence:
     - service: automation.reload
   - conditions:
-    - condition: template
-      value_template: '{{ "blueprints/script" in trigger.event.data.folder }}'
+    - '{{ "blueprints/script" in trigger.event.data.folder }}'
     sequence:
     - service: script.reload

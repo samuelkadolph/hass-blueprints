@@ -37,9 +37,15 @@ blueprint:
       default: true
       selector:
         boolean:
+    led_invert:
+      name: Invert LED
+      description: Invert LED state
+      default: false
+      selector:
+        boolean:
     state_variable:
       name: State Variable
-      description: >
+      description: |
         This automation requires a Number helper to store the current state of the shade.
         Please create one that goes from 0 to 4 and select it here.
         Must only be shared with automations using the same set of shades.
@@ -66,12 +72,12 @@ trigger:
   id: reset
 - platform: state
   entity_id: !input covers
-  id: coverOpen
   to: open
+  id: coverOpen
 - platform: state
   entity_id: !input covers
-  id: coverClosed
   to: closed
+  id: coverClosed
 - platform: event
   event_type: zwave_js_value_notification
   event_data:
@@ -100,51 +106,46 @@ trigger:
 variables:
   controller: !input controller
   key: !input key
-  key_led_param: '{{ int(key) % 5 + 1 }}'
   led_enable: !input led_enable
+  led_invert: !input led_invert
+  led_off_value: '{{ led_invert and 3 or 2 }}'
+  led_on_value: '{{ led_invert and 2 or 3 }}'
+  led_param: '{{ int(key) % 5 + 1 }}'
   state_variable: !input state_variable
   state: '{{ int(states(state_variable)) }}'
 
 action:
 - choose:
   - conditions:
-    - condition: trigger
-      id: reset
+    - '{{ trigger.id == "reset" }}'
     sequence:
     - service: input_number.set_value
       data: { value: 0 }
       target: { entity_id: !input state_variable }
 
   - conditions:
-    - condition: trigger
-      id: coverOpen
-    - condition: template
-      value_template: '{{ led_enable }}'
+    - '{{ trigger.id == "coverOpen" }}'
+    - '{{ led_enable }}'
     sequence:
     - service: zwave_js.set_config_parameter
-      data: { parameter: '{{ key_led_param }}', value: 3 }
+      data: { parameter: '{{ led_param }}', value: '{{ led_on_value }}' }
       target: { device_id: '{{ controller }}' }
 
   - conditions:
-    - condition: trigger
-      id: coverClosed
-    - condition: template
-      value_template: '{{ led_enable }}'
+    - '{{ trigger.id == "coverClosed" }}'
+    - '{{ led_enable }}'
     sequence:
     - service: zwave_js.set_config_parameter
-      data: { parameter: '{{ key_led_param }}', value: 2 }
+      data: { parameter: '{{ led_param }}', value: '{{ led_off_value }}' }
       target: { device_id: '{{ controller }}' }
 
   - conditions:
-    - condition: trigger
-      id: keyPressed
-    - condition: template
-      value_template: '{{ int(trigger.event.data.property_key) == int(key) }}'
+    - '{{ trigger.id == "keyPressed" }}'
+    - '{{ int(trigger.event.data.property_key) == int(key) }}'
     sequence:
     - choose:
       - conditions:
-        - condition: template
-          value_template: '{{ state == 0 }}'
+        - '{{ state == 0 }}'
         sequence:
         - if:
           - condition: state
@@ -163,8 +164,7 @@ action:
             data: { value: 3 }
             target: { entity_id: !input state_variable }
       - conditions:
-        - condition: template
-          value_template: '{{ state == 1 }}'
+        - '{{ state == 1 }}'
         sequence:
         - service: cover.stop_cover
           target: { entity_id: !input covers }
@@ -172,8 +172,7 @@ action:
           data: { value: 2 }
           target: { entity_id: !input state_variable }
       - conditions:
-        - condition: template
-          value_template: '{{ state == 2 }}'
+        - '{{ state == 2 }}'
         sequence:
         - service: cover.close_cover
           target: { entity_id: !input covers }
@@ -181,8 +180,7 @@ action:
           data: { value: 3 }
           target: { entity_id: !input state_variable }
       - conditions:
-        - condition: template
-          value_template: '{{ state == 3 }}'
+        - '{{ state == 3 }}'
         sequence:
         - service: cover.stop_cover
           target: { entity_id: !input covers }
@@ -190,8 +188,7 @@ action:
           data: { value: 4 }
           target: { entity_id: !input state_variable }
       - conditions:
-        - condition: template
-          value_template: '{{ state == 4 }}'
+        - '{{ state == 4 }}'
         sequence:
         - service: cover.open_cover
           target: { entity_id: !input covers }
@@ -200,15 +197,12 @@ action:
           target: { entity_id: !input state_variable }
 
   - conditions:
-    - condition: trigger
-      id: keyHeldDown
-    - condition: template
-      value_template: '{{ int(trigger.event.data.property_key) == int(key) }}'
+    - '{{ trigger.id == "keyHeldDown" }}'
+    - '{{ int(trigger.event.data.property_key) == int(key) }}'
     sequence:
     - choose:
       - conditions:
-        - condition: template
-          value_template: '{{ state == 0 }}'
+        - '{{ state == 0 }}'
         sequence:
         - if:
           - condition: state
@@ -227,8 +221,7 @@ action:
             data: { value: 3 }
             target: { entity_id: !input state_variable }
       - conditions:
-        - condition: template
-          value_template: '{{ state == 2 }}'
+        - '{{ state == 2 }}'
         sequence:
         - service: cover.close_cover
           target: { entity_id: !input covers }
@@ -236,8 +229,7 @@ action:
           data: { value: 3 }
           target: { entity_id: !input state_variable }
       - conditions:
-        - condition: template
-          value_template: '{{ state == 4 }}'
+        - '{{ state == 4 }}'
         sequence:
         - service: cover.open_cover
           target: { entity_id: !input covers }
@@ -246,15 +238,12 @@ action:
           target: { entity_id: !input state_variable }
 
   - conditions:
-    - condition: trigger
-      id: keyReleased
-    - condition: template
-      value_template: '{{ int(trigger.event.data.property_key) == int(key) }}'
+    - '{{ trigger.id == "keyReleased" }}'
+    - '{{ int(trigger.event.data.property_key) == int(key) }}'
     sequence:
     - choose:
       - conditions:
-        - condition: template
-          value_template: '{{ state == 1 }}'
+        - '{{ state == 1 }}'
         sequence:
         - service: cover.stop_cover
           target: { entity_id: !input covers }
@@ -262,8 +251,7 @@ action:
           data: { value: 2 }
           target: { entity_id: !input state_variable }
       - conditions:
-        - condition: template
-          value_template: '{{ state == 3 }}'
+        - '{{ state == 3 }}'
         sequence:
         - service: cover.stop_cover
           target: { entity_id: !input covers }

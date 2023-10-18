@@ -15,26 +15,24 @@ blueprint:
       name: On Conditions
       description: What other conditions should be checked before running the on actions?
       default: []
-      selector:
+      selector: &conditions-selector
         condition:
     on_actions:
       name: On Actions
       description: What should we do when the remote turns on?
       default: []
-      selector:
+      selector: &actions-selector
         action:
     off_conditions:
       name: Off Conditions
       description: What other conditions should be checked before running the off actions?
       default: []
-      selector:
-        condition:
+      selector: *conditions-selector
     off_actions:
       name: Off Actions
       description: What should we do when the remote turns off?
       default: []
-      selector:
-        action:
+      selector: *actions-selector
 
 mode: single
 
@@ -46,15 +44,11 @@ trigger:
 action:
 - choose:
   - conditions:
+    - '{{ trigger.to_state.state == "on" }}'
     - condition: !input on_conditions
-    - condition: state
-      entity_id: !input remote
-      state: 'on'
     sequence: !input on_actions
 
   - conditions:
+    - '{{ trigger.to_state.state == "off" }}'
     - condition: !input off_conditions
-    - condition: state
-      entity_id: !input remote
-      state: 'off'
     sequence: !input off_actions
