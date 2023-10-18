@@ -9,8 +9,8 @@ blueprint:
       name: First Trigger
       description: What should trigger the first set of actions?
       default: elevation_below
-      selector:
-        select: &trigger-select
+      selector: &trigger-selector
+        select:
           mode: dropdown
           options:
           - label: "Sun Elevation Above"
@@ -72,8 +72,7 @@ blueprint:
       name: Second Trigger
       description: What should trigger the second set of actions?
       default: time
-      selector:
-        select: *trigger-select
+      selector: *trigger-selector
     second_elevation_helper:
       name: Second Sun Elevation Helper
       description: Use a helper or leave empty to specify the elevation below.
@@ -169,22 +168,16 @@ action:
     - condition: !input first_conditions
     - condition: or
       conditions:
-      - condition: template
-        value_template: '{{ trigger.id == "firstElevation" }}'
-      - condition: template
-        value_template: '{{ trigger.id == "firstTimeHelper" and first_trigger == "time" and first_time_helper != None }}'
-      - condition: template
-        value_template: '{{ trigger.id == "firstTimeManual" and first_trigger == "time" and first_time_helper == None }}'
+      - '{{ trigger.id == "firstElevation" }}'
+      - '{{ trigger.id == "firstTimeHelper" and first_trigger == "time" and first_time_helper != None }}'
+      - '{{ trigger.id == "firstTimeManual" and first_trigger == "time" and first_time_helper == None }}'
     sequence: !input first_actions
 
   - conditions:
     - condition: !input second_conditions
     - condition: or
       conditions:
-      - condition: template
-        value_template: '{{ trigger.id == "secondElevation" }}'
-      - condition: template
-        value_template: '{{ trigger.id == "secondTimeHelper" and second_trigger == "time" and second_time_helper != None }}'
-      - condition: template
-        value_template: '{{ trigger.id == "secondTimeManual" and second_trigger == "time" and second_time_helper == None }}'
+      - '{{ trigger.id == "secondElevation" }}'
+      - '{{ trigger.id == "secondTimeHelper" and second_trigger == "time" and second_time_helper != None }}'
+      - '{{ trigger.id == "secondTimeManual" and second_trigger == "time" and second_time_helper == None }}'
     sequence: !input second_actions
