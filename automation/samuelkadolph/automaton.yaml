@@ -54,19 +54,19 @@ blueprint:
       name: First Time
       description: When should we trigger the first set of actions?
       default:
-      selector:
+      selector: &time-manual-selector
         time:
     first_conditions:
       name: First Conditions
       description: What conditions should be checked before running the first set of actions?
       default: []
-      selector:
+      selector: &conditions-selector
         condition:
     first_actions:
       name: First Actions
       description: What should we do when the first trigger occurs?
       default: []
-      selector:
+      selector: &actions-selector
         action:
     second_trigger:
       name: Second Trigger
@@ -92,20 +92,17 @@ blueprint:
       name: Second Time
       description: When should we trigger the second set of actions?
       default:
-      selector:
-        time:
+      selector: *time-manual-selector
     second_conditions:
       name: Second Conditions
       description: What conditions should be checked before running the second set of actions?
       default: []
-      selector:
-        condition:
+      selector: *conditions-selector
     second_actions:
       name: Second Actions
       description: What should we do when the second trigger occurs?
       default: []
-      selector:
-        action:
+      selector: *actions-selector
 
 mode: single
 
