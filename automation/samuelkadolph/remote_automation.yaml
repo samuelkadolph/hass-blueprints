@@ -7,7 +7,7 @@ blueprint:
   input:
     remote:
       name: Remote
-      description: Which remote TODO
+      description: Which remote to use?
       selector:
         entity:
           domain: remote

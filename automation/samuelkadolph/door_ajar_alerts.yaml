@@ -52,11 +52,11 @@ action:
     sequence:
     - service: notify.notify
       data:
-        data: { push: { sound: { name: 'Default', critical: 1, volume: 1 } } }
+        data: { push: { sound: { name: Default, critical: true, volume: true } } }
         title: Door Left Open
         message: '{{ door }} door has been left open!'
     - service: notify.alexa_media_everywhere
       data:
-        data: { type: 'announce' }
+        data: { type: announce }
         message: 'Alert! {{ door }} door has been left open!'
     - delay: !input delay

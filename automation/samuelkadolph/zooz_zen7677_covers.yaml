@@ -7,7 +7,7 @@ blueprint:
   input:
     switch:
       name: Switch
-      description: Which switch to use
+      description: Which switch to use?
       selector:
         device:
           filter:

@@ -7,7 +7,7 @@ blueprint:
   input:
     controller:
       name: Controller
-      description: Which Zooz ZEN32 controller to use
+      description: Which Zooz ZEN32 controller to use?
       selector:
         device:
           filter:

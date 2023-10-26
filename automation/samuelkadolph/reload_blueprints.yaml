@@ -7,11 +7,14 @@ blueprint:
   input: {}
 
 mode: single
-max_exceeded: silent
 
 trigger:
 - platform: event
   event_type: folder_watcher
+
+condition:
+  - '{{ trigger.event.data.event_type == "closed" }}'
+  - '{{ path[-5:] == ".yaml" }}'
 
 action:
 - choose:
