@@ -1,0 +1,90 @@
+blueprint:
+  name: Zooz ZEN32 Parameters
+  description: Applies a set of standard paremeters to multiple ZEN32s.
+  domain: script
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/script/samuelkadolph/zooz_zen32_parameters.yaml
+  input:
+    devices:
+      name: Devices
+      description: Which devices to apply standard parameters to?
+      selector:
+        device:
+          multiple: true
+          filter:
+          - { manufacturer: Zooz, model: ZEN32 }
+          - { manufacturer: Zooz, model: ZEN32 800LR }
+
+sequence:
+- service: zwave_js.set_config_parameter
+  data: { parameter: 6, value: 3 }                  # LED Indicator Color (Relay)
+  target: { device_id: !input devices }             # Red
+- service: zwave_js.set_config_parameter
+  data: { parameter: 7, value: 3 }                  # LED Indicator Color (Button 1)
+  target: { device_id: !input devices }             # Red
+- service: zwave_js.set_config_parameter
+  data: { parameter: 8, value: 3 }                  # LED Indicator Color (Button 2)
+  target: { device_id: !input devices }             # Red
+- service: zwave_js.set_config_parameter
+  data: { parameter: 9, value: 3 }                  # LED Indicator Color (Button 3)
+  target: { device_id: !input devices }             # Red
+- service: zwave_js.set_config_parameter
+  data: { parameter: 10, value: 3 }                 # LED Indicator Color (Button 4)
+  target: { device_id: !input devices }             # Red
+- service: zwave_js.set_config_parameter
+  data: { parameter: 11, value: 2 }                 # LED Indicator Brightness (Relay)
+  target: { device_id: !input devices }             # Low (30%)
+- service: zwave_js.set_config_parameter
+  data: { parameter: 12, value: 2 }                 # LED Indicator Brightness (Button 1)
+  target: { device_id: !input devices }             # Low (30%)
+- service: zwave_js.set_config_parameter
+  data: { parameter: 13, value: 2 }                 # LED Indicator Brightness (Button 2)
+  target: { device_id: !input devices }             # Low (30%)
+- service: zwave_js.set_config_parameter
+  data: { parameter: 14, value: 2 }                 # LED Indicator Brightness (Button 3)
+  target: { device_id: !input devices }             # Low (30%)
+- service: zwave_js.set_config_parameter
+  data: { parameter: 15, value: 2 }                 # LED Indicator Brightness (Button 4)
+  target: { device_id: !input devices }             # Low (30%)
+- service: zwave_js.set_config_parameter
+  data: { parameter: 16, value: 0 }                 # Auto-Off Timer (Relay)
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 17, value: 0 }                 # Auto-On Timer (Relay)
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 18, value: 0 }                 # State After Power Failure
+  target: { device_id: !input devices }             # Previous state
+- service: zwave_js.set_config_parameter
+  data: { parameter: 19, value: 2 }                 # Relay Control
+  target: { device_id: !input devices }             # Local and Z-Wave control disabled
+- service: zwave_js.set_config_parameter
+  data: { parameter: 20, value: 0 }                 # Send Report and Toggle LED on Button Press If Relay Disabled
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 21, value: 0 }                 # 3-Way Switch Type
+  target: { device_id: !input devices }             # Toggle switch
+- service: zwave_js.set_config_parameter
+  data: { parameter: 22, value: 1 }                 # Local Programming
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 23, value: 1 }                 # LED Settings Indicator
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 24, value: 1 }                 # Scene Control (Relay)
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 25, bitmask: 0x1, value: 1 }   # Send Status Change Report: Local Control
+  target: { device_id: !input devices }             # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 25, bitmask: 0x2, value: 1 }   # Send Status Change Report: 3-Way
+  target: { device_id: !input devices }             # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 25, bitmask: 0x4, value: 1 }   # Send Status Change Report: Z-Wave
+  target: { device_id: !input devices }             # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 25, bitmask: 0x8, value: 1 }   # Send Status Change Report: Timer
+  target: { device_id: !input devices }             # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 26, value: 0 }                 # Scene Control (Relay)
+  target: { device_id: !input devices }             # Disable

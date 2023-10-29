@@ -1,0 +1,69 @@
+blueprint:
+  name: Zooz ZEN76 Parameters
+  description: Applies a set of standard paremeters to multiple ZEN76s.
+  domain: script
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/script/samuelkadolph/zooz_zen76_parameters.yaml
+  input:
+    devices:
+      name: Devices
+      description: Which devices to apply standard parameters to?
+      selector:
+        device:
+          multiple: true
+          filter:
+          - { manufacturer: Zooz, model: ZEN76 }
+          - { manufacturer: Zooz, model: ZEN76 800LR }
+
+sequence:
+- service: zwave_js.set_config_parameter
+  data: { parameter: 1, value: 0 }                  # Inverted Orientation
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 2, value: 2 }                  # LED Indicator
+  target: { device_id: !input devices }             # Always off
+- service: zwave_js.set_config_parameter
+  data: { parameter: 3, value: 0 }                  # Auto Turn-Off Timer
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 5, value: 0 }                  # Auto Turn-On Timer
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 7, bitmask: 0x1, value: 1 }    # Control Group 2 with Physical Switch
+  target: { device_id: !input devices }             # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 7, bitmask: 0x2, value: 1 }    # Control Group 2 with Connected 3-Way Switch
+  target: { device_id: !input devices }             # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 7, bitmask: 0x4, value: 1 }    # Control Group 2 with Z-Wave Commands
+  target: { device_id: !input devices }             # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 7, bitmask: 0x8, value: 1 }    # Control Group 2 with On/Off Timers
+  target: { device_id: !input devices }             # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 8, value: 2 }                  # State After Power Failure
+  target: { device_id: !input devices }             # Previous state
+- service: zwave_js.set_config_parameter
+  data: { parameter: 10, value: 1 }                 # Scene Control
+  target: { device_id: !input devices }             # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 12, value: 2 }                 # Smart Switch Mode
+  target: { device_id: !input devices }             # Local and Z-Wave control disabled
+- service: zwave_js.set_config_parameter
+  data: { parameter: 13, value: 1 }                 # Smart Bulb Mode Reporting Behavior
+  target: { device_id: !input devices }             # No status or LED state change when physical (and Z-Wave) control disabled
+- service: zwave_js.set_config_parameter
+  data: { parameter: 14, value: 3 }                 # LED Indicator Color
+  target: { device_id: !input devices }             # Red
+- service: zwave_js.set_config_parameter
+  data: { parameter: 15, value: 2 }                 # LED Indicator Brightness
+  target: { device_id: !input devices }             # Low (30%)
+- service: zwave_js.set_config_parameter
+  data: { parameter: 16, value: 1 }                 # Association Reports
+  target: { device_id: !input devices }             # Binary Switch CC report (Z-Wave / Manual)
+- service: zwave_js.set_config_parameter
+  data: { parameter: 17, value: 1 }                 # Local Programming
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 18, value: 1 }                 # LED indicator for setting changes
+  target: { device_id: !input devices }             # Don't flash if a setting is changed

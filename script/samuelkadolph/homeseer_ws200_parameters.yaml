@@ -1,0 +1,38 @@
+blueprint:
+  name: HomeSeer WS200+ Parameters
+  description: Applies a set of standard paremeters to multiple WS200+s.
+  domain: script
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/script/samuelkadolph/homeseer_ws200_parameters.yaml
+  input:
+    devices:
+      name: Devices
+      description: Which devices to apply standard parameters to?
+      selector:
+        device:
+          multiple: true
+          filter:
+          - { manufacturer: HomeSeer Technologies, model: HS-WS200+ }
+
+sequence:
+- service: zwave_js.set_config_parameter
+  data: { parameter: 3, value: 0 }                  # LED Indicator
+  target: { device_id: !input devices }             # On when load is off
+- service: zwave_js.set_config_parameter
+  data: { parameter: 4, value: 0 }                  # Inverted Orientation
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 6, value: 0 }                  # Central Scene Commands
+  target: { device_id: !input devices }             # Enable (control load with delay)
+- service: zwave_js.set_config_parameter
+  data: { parameter: 13, value: 0 }                 # Enable / Disable Custom LED Status Mode
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 14, value: 0 }                 # Default LED Color
+  target: { device_id: !input devices }             # White
+- service: zwave_js.set_config_parameter
+  data: { parameter: 21, value: 0 }                 # Status Mode LED Color
+  target: { device_id: !input devices }             # Off
+- service: zwave_js.set_config_parameter
+  data: { parameter: 31, value: 0 }                 # Blink Frequency
+  target: { device_id: !input devices }             # 0

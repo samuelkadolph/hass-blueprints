@@ -1,0 +1,104 @@
+blueprint:
+  name: HomeSeer WX300 Parameters
+  description: Applies a set of standard paremeters to multiple WX300s.
+  domain: script
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/script/samuelkadolph/homeseer_wx300_parameters.yaml
+  input:
+    devices:
+      name: Devices
+      description: Which devices to apply standard parameters to?
+      selector:
+        device:
+          multiple: true
+          filter:
+          - { manufacturer: HomeSeer Technologies, model: HS-WX300 }
+
+sequence:
+- service: zwave_js.set_config_parameter
+  data: { parameter: 3, value: 1 }                  # Bottom LED Operation
+  target: { device_id: !input devices }             # On when load is on
+- service: zwave_js.set_config_parameter
+  data: { parameter: 4, value: 0 }                  # Inverted Orientation
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 5, value: 1 }                  # Dimming Threshold
+  target: { device_id: !input devices }             # 1
+- service: zwave_js.set_config_parameter
+  data: { parameter: 6, value: 0 }                  # Central Scene Commands
+  target: { device_id: !input devices }             # Enable (control load with delay)
+- service: zwave_js.set_config_parameter
+  data: { parameter: 11, value: 1 }                 # Ramp Rate (Z-Wave)
+  target: { device_id: !input devices }             # 1 second
+- service: zwave_js.set_config_parameter
+  data: { parameter: 12, value: 3 }                 # Ramp Rate (Manual)
+  target: { device_id: !input devices }             # 3 seconds
+- service: zwave_js.set_config_parameter
+  data: { parameter: 13, value: 0 }                 # Status Mode
+  target: { device_id: !input devices }             # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 14, value: 0 }                 # Load Status LED Color
+  target: { device_id: !input devices }             # White
+- service: zwave_js.set_config_parameter
+  data: { parameter: 21, value: 0 }                 # Status LED 1 Color
+  target: { device_id: !input devices }             # Off
+- service: zwave_js.set_config_parameter
+  data: { parameter: 22, value: 0 }                 # Status LED 2 Color
+  target: { device_id: !input devices }             # Off
+- service: zwave_js.set_config_parameter
+  data: { parameter: 23, value: 0 }                 # Status LED 3 Color
+  target: { device_id: !input devices }             # Off
+- service: zwave_js.set_config_parameter
+  data: { parameter: 24, value: 0 }                 # Status LED 4 Color
+  target: { device_id: !input devices }             # Off
+- service: zwave_js.set_config_parameter
+  data: { parameter: 25, value: 0 }                 # Status LED 5 Color
+  target: { device_id: !input devices }             # Off
+- service: zwave_js.set_config_parameter
+  data: { parameter: 26, value: 0 }                 # Status LED 6 Color
+  target: { device_id: !input devices }             # Off
+- service: zwave_js.set_config_parameter
+  data: { parameter: 27, value: 0 }                 # Status LED 7 Color
+  target: { device_id: !input devices }             # Off
+- service: zwave_js.set_config_parameter
+  data: { parameter: 30, value: 0 }                 # Custom Status Blink Frequency
+  target: { device_id: !input devices }             # 0
+- service: zwave_js.set_config_parameter
+  data: { parameter: 31, bitmask: 0x01, value: 0 }  # LED 1 Blink Status
+  target: { device_id: !input devices }             # Solid
+- service: zwave_js.set_config_parameter
+  data: { parameter: 31, bitmask: 0x02, value: 0 }  # LED 2 Blink Status
+  target: { device_id: !input devices }             # Solid
+- service: zwave_js.set_config_parameter
+  data: { parameter: 31, bitmask: 0x04, value: 0 }  # LED 3 Blink Status
+  target: { device_id: !input devices }             # Solid
+- service: zwave_js.set_config_parameter
+  data: { parameter: 31, bitmask: 0x08, value: 0 }  # LED 4 Blink Status
+  target: { device_id: !input devices }             # Solid
+- service: zwave_js.set_config_parameter
+  data: { parameter: 31, bitmask: 0x10, value: 0 }  # LED 5 Blink Status
+  target: { device_id: !input devices }             # Solid
+- service: zwave_js.set_config_parameter
+  data: { parameter: 31, bitmask: 0x20, value: 0 }  # LED 6 Blink Status
+  target: { device_id: !input devices }             # Solid
+- service: zwave_js.set_config_parameter
+  data: { parameter: 31, bitmask: 0x40, value: 0 }  # LED 7 Blink Status
+  target: { device_id: !input devices }             # Solid
+- service: zwave_js.set_config_parameter
+  data: { parameter: 32, value: 0 }                 # Wire Mode
+  target: { device_id: !input devices }             # 3 wire mode (Neutral, line & load)
+- service: zwave_js.set_config_parameter
+  data: { parameter: 33, value: 1 }                 # Indicate Operation Mode On Startup
+  target: { device_id: !input devices }             # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 34, value: 3 }                 # Relative LED Indicator Brightness
+  target: { device_id: !input devices }             # 3
+- service: zwave_js.set_config_parameter
+  data: { parameter: 35, value: 0 }                 # Paddle Behavior (Switch Mode)
+  target: { device_id: !input devices }             # Top paddle turns on; Bottom paddle turns off
+- service: zwave_js.set_config_parameter
+  data: { parameter: 36, value: 0 }                 # Default Brightness (Manual Control)
+  target: { device_id: !input devices }             # Last non-zero brightness
+- service: zwave_js.set_config_parameter
+  data: { parameter: 37, value: 0 }                 # Control Load with Paddle
+  target: { device_id: !input devices }             # Enable

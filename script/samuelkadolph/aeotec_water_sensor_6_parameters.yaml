@@ -1,0 +1,105 @@
+blueprint:
+  name: Aeotec Water Sensor 6 Parameters
+  description: Applies a set of standard paremeters for Water Sensor 6.
+  domain: script
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/script/samuelkadolph/aeotec_water_sensor_6_parameters.yaml
+  input:
+    devices:
+      name: Sensors
+      description: Which sensors to apply standard parameters to?
+      selector:
+        device:
+          multiple: true
+          filter:
+          - { manufacturer: AEON Labs, model: ZW122 }
+
+
+sequence:
+- service: zwave_js.set_config_parameter
+  data: { parameter: 2, value: 0 }                          # Wake Device for 10 minutes After Power On
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 8, value: 30 }                         # Wake Up Timeout
+  target: { device_id: !input devices }                     # 30
+- service: zwave_js.set_config_parameter
+  data: { parameter: 10, bitmask: 0x00FF, value: 10 }       # Buzzer Repeat Cycles
+  target: { device_id: !input devices }                     # 10
+- service: zwave_js.set_config_parameter
+  data: { parameter: 10, bitmask: 0xFF00, value: 10 }       # Buzzer On Time
+  target: { device_id: !input devices }                     # 10
+- service: zwave_js.set_config_parameter
+  data: { parameter: 10, bitmask: 0xFFFF0000, value: 30 }   # Buzzer Off Time
+  target: { device_id: !input devices }                     # 30
+- service: zwave_js.set_config_parameter
+  data: { parameter: 39, value: 20 }                        # Low Battery Threshold
+  target: { device_id: !input devices }                     # 20%
+- service: zwave_js.set_config_parameter
+  data: { parameter: 48, value: 1 }                         # Send Sensor Reports
+  target: { device_id: !input devices }                     # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 49, bitmask: 0x0000FF00, value: 0 }    # Overheat Threshold Temperature Unit
+  target: { device_id: !input devices }                     # Celsius
+- service: zwave_js.set_config_parameter
+  data: { parameter: 49, bitmask: 0xFFFF0000, value: 400 }  # Overheat Temperature Threshold
+  target: { device_id: !input devices }                     # 40.0
+- service: zwave_js.set_config_parameter
+  data: { parameter: 50, bitmask: 0x0000FF00, value: 0 }    # Underheat Threshold Temperature Unit
+  target: { device_id: !input devices }                     # Celsius
+- service: zwave_js.set_config_parameter
+  data: { parameter: 50, bitmask: 0xFFFF0000, value: 0 }    # Underheat Temperature Threshold
+  target: { device_id: !input devices }                     # 0.0
+- service: zwave_js.set_config_parameter
+  data: { parameter: 57, bitmask: 0x000F, value: 0 }        # Recover Limit Temperature Unit
+  target: { device_id: !input devices }                     # Celsius
+- service: zwave_js.set_config_parameter
+  data: { parameter: 57, bitmask: 0xFF00, value: 20 }       # Temperature Recover Limit
+  target: { device_id: !input devices }                     # 2.0
+- service: zwave_js.set_config_parameter
+  data: { parameter: 64, value: 0 }                         # Temperature Unit for Reporting
+  target: { device_id: !input devices }                     # Celsius
+- service: zwave_js.set_config_parameter
+  data: { parameter: 86, value: 1 }                         # Buzzer
+  target: { device_id: !input devices }                     # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 87, bitmask: 0x01, value: 0 }          # Buzzer: Water Leak
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 87, bitmask: 0x02, value: 0 }          # Buzzer: Vibration
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 87, bitmask: 0x04, value: 0 }          # Buzzer: Tilt Sensor
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 87, bitmask: 0x10, value: 0 }          # Buzzer: Underheat
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 87, bitmask: 0x20, value: 0 }          # Buzzer: Overheat
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 88, value: 0 }                         # Basic Set on Water Leak (Probe 1)
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 89, value: 0 }                         # Basic Set on Water Leak (Probe 2)
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 94, value: 1 }                         # Battery Source to Report
+  target: { device_id: !input devices }                     # Battery level
+- service: zwave_js.set_config_parameter
+  data: { parameter: 101, value: 3 }                        # Automatic Secondary Report Type
+  target: { device_id: !input devices }                     # Battery and temperature
+- service: zwave_js.set_config_parameter
+  data: { parameter: 111, value: 1800 }                     # Automatic Secondary Report Interval
+  target: { device_id: !input devices }                     # 1800
+- service: zwave_js.set_config_parameter
+  data: { parameter: 135, value: 1 }                        # Automatic Report Type
+  target: { device_id: !input devices }                     # Notification CC (Association group 1)
+- service: zwave_js.set_config_parameter
+  data: { parameter: 201, bitmask: 0x000F, value: 0 }       # Temperature Calibration Unit
+  target: { device_id: !input devices }                     # Celsius
+- service: zwave_js.set_config_parameter
+  data: { parameter: 201, bitmask: 0xFF00, value: 0 }       # Temperature Calibration
+  target: { device_id: !input devices }                     # 0.0
+- service: zwave_js.set_config_parameter
+  data: { parameter: 252, value: 0 }                        # Lock Configuration
+  target: { device_id: !input devices }                     # Disable
