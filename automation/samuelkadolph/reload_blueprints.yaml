@@ -11,10 +11,18 @@ mode: single
 trigger:
 - platform: event
   event_type: folder_watcher
+  event_data:
+    event_type: closed
+- platform: event
+  event_type: folder_watcher
+  event_data:
+    event_type: moved
 
 condition:
-  - '{{ trigger.event.data.event_type == "closed" }}'
-  - '{{ path[-5:] == ".yaml" }}'
+  - condition: or
+    conditions:
+    - '{{ trigger.event.data.event_type == "closed" and trigger.event.data.file[-5:] == ".yaml" }}'
+    - '{{ trigger.event.data.event_type == "moved" and trigger.event.data.dest_file[-5:] == ".yaml" }}'
 
 action:
 - choose:
