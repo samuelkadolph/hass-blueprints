@@ -1,0 +1,274 @@
+blueprint:
+  name: Aeotec MultiSensor 7 Parameters
+  description: Applies a set of standard paremeters for MultiSensor 7.
+  domain: script
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/script/samuelkadolph/aeotec_multisensor_7_parameters.yaml
+  input:
+    devices:
+      name: Sensors
+      description: Which sensors to apply standard parameters to?
+      selector:
+        device:
+          multiple: true
+          filter:
+          - { manufacturer: Aeotec Ltd., model: ZWA024 }
+    led:
+      name: LED Blink
+      selector:
+        boolean:
+    temp:
+      name: Temperature Calibration
+      selector:
+        number:
+            max: 127
+            min: -128
+            unit_of_measurement: 0.1 °
+            mode: box
+
+variables:
+  led: !input led
+  motion_led: '{{ led and "0" or "3" }}'
+  wakeup_led: '{{ led and "0" or "8" }}'
+
+sequence:
+- service: zwave_js.set_config_parameter
+  data: { parameter: 1, value: 0 }                          # Beaming
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 2, value: 30 }                         # Motion Retrigger Timeout
+  target: { device_id: !input devices }                     # 30 seconds
+- service: zwave_js.set_config_parameter
+  data: { parameter: 3, value: 300 }                        # Motion Reset Timeout
+  target: { device_id: !input devices }                     # 300 seconds
+- service: zwave_js.set_config_parameter
+  data: { parameter: 4, value: 11 }                         # Motion Sensitivity
+  target: { device_id: !input devices }                     # 11
+- service: zwave_js.set_config_parameter
+  data: { parameter: 5, value: 2 }                          # Motion Report Type
+  target: { device_id: !input devices }                     # Notification and Binary Sensor Report
+- service: zwave_js.set_config_parameter
+  data: { parameter: 6, value: 255 }                        # Vibration Sensor
+  target: { device_id: !input devices }                     # Only send vibration triggered notifications
+- service: zwave_js.set_config_parameter
+  data: { parameter: 7, value: 0 }                          # Vibration Intensity Reports
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 9, value: 30 }                         # Wakeup Duration
+  target: { device_id: !input devices }                     # 30 seconds
+- service: zwave_js.set_config_parameter
+  data: { parameter: 11, value: 0 }                         # Direct Association (Motion): Basic Set Value
+  target: { device_id: !input devices }                     # 0xff on triggered, 0x00 on cleared
+- service: zwave_js.set_config_parameter
+  data: { parameter: 12, value: 65280 }                     # Direct Association (Motion): Basic Set Value (Custom)
+  target: { device_id: !input devices }                     # 65280
+- service: zwave_js.set_config_parameter
+  data: { parameter: 13, value: 30000 }                     # Direct Association (Motion): Luminance Threshold
+  target: { device_id: !input devices }                     # 30000
+- service: zwave_js.set_config_parameter
+  data: { parameter: 14, value: 60 }                        # Direct Association (High Humidity): Basic Set Threshold
+  target: { device_id: !input devices }                     # 60%
+- service: zwave_js.set_config_parameter
+  data: { parameter: 15, value: 40 }                        # Direct Association (Low Humidity): Basic Set Threshold
+  target: { device_id: !input devices }                     # 40%
+- service: zwave_js.set_config_parameter
+  data: { parameter: 16, value: 240 }                       # Direct Association (High Temperature): Basic Set Threshold
+  target: { device_id: !input devices }                     # 240  0.1 °C/°F
+- service: zwave_js.set_config_parameter
+  data: { parameter: 17, value: 155 }                       # Direct Association (Low Temperature): Basic Set Threshold
+  target: { device_id: !input devices }                     # 155 0.1 °C/°F
+- service: zwave_js.set_config_parameter
+  data: { parameter: 18, value: 2000 }                      # Direct Association (High Luminance): Basic Set Threshold
+  target: { device_id: !input devices }                     # 2000 lux
+- service: zwave_js.set_config_parameter
+  data: { parameter: 19, value: 100 }                       # Direct Association (Low Luminance): Basic Set Threshold
+  target: { device_id: !input devices }                     # 100 lux
+- service: zwave_js.set_config_parameter
+  data: { parameter: 20, value: 8 }                         # Direct Association (High UV): Basic Set Threshold
+  target: { device_id: !input devices }                     # 8
+- service: zwave_js.set_config_parameter
+  data: { parameter: 21, value: 1 }                         # Direct Association (Low UV): Basic Set Threshold
+  target: { device_id: !input devices }                     # 1
+- service: zwave_js.set_config_parameter
+  data: { parameter: 39, value: 20 }                        # Low Battery Threshold
+  target: { device_id: !input devices }                     # 20 %
+- service: zwave_js.set_config_parameter
+  data: { parameter: 40, value: 1 }                         # Change Threshold Reporting Reporting
+  target: { device_id: !input devices }                     # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 41, value: 20 }                        # Change Threshold Reporting: Temperature
+  target: { device_id: !input devices }                     # 20 0.1 °C/°F
+- service: zwave_js.set_config_parameter
+  data: { parameter: 42, value: 5 }                         # Change Threshold Reporting: Humidity
+  target: { device_id: !input devices }                     # 5
+- service: zwave_js.set_config_parameter
+  data: { parameter: 43, value: 100 }                       # Change Threshold Reporting: Luminance
+  target: { device_id: !input devices }                     # 100 lux
+- service: zwave_js.set_config_parameter
+  data: { parameter: 44, value: 2 }                         # Change Threshold Reporting: UV
+  target: { device_id: !input devices }                     # 2
+- service: zwave_js.set_config_parameter
+  data: { parameter: 45, value: 240 }                       # Change Threshold Reporting: Check Interval
+  target: { device_id: !input devices }                     #   240 seconds
+- service: zwave_js.set_config_parameter
+  data: { parameter: 46, value: 0 }                         # Low Temperature Report
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 48, bitmask: 0x01, value: 0 }          # Threshold Reporting: High Temperature
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 48, bitmask: 0x02, value: 0 }          # Threshold Reporting: High Humidity
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 48, bitmask: 0x04, value: 0 }          # Threshold Reporting: High Luminance
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 48, bitmask: 0x08, value: 0 }          # Threshold Reporting: High UV
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 48, bitmask: 0x10, value: 0 }          # Threshold Reporting: Low Temperature
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 48, bitmask: 0x20, value: 0 }          # Threshold Reporting: Low Humidity
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 48, bitmask: 0x40, value: 0 }          # Threshold Reporting: Low Luminance
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 48, bitmask: 0x80, value: 0 }          # Threshold Reporting: Low UV
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 49, value: 280 }                       # Threshold Reporting: High Temperature Limit
+  target: { device_id: !input devices }                     # 280 0.1 °C/°F
+- service: zwave_js.set_config_parameter
+  data: { parameter: 50, value: 0 }                         # Threshold Reporting: Low Temperature Limit
+  target: { device_id: !input devices }                     # 0 0.1 °C/°F
+- service: zwave_js.set_config_parameter
+  data: { parameter: 51, value: 20 }                        # Threshold Reporting: Temperature Recover Limit
+  target: { device_id: !input devices }                     # 20 0.1 °C/°F
+- service: zwave_js.set_config_parameter
+  data: { parameter: 52, value: 60 }                        # Threshold Reporting: High Humidity Limit
+  target: { device_id: !input devices }                     # 60 %
+- service: zwave_js.set_config_parameter
+  data: { parameter: 53, value: 40 }                        # Threshold Reporting: Low Humidity Limit
+  target: { device_id: !input devices }                     # 40 %
+- service: zwave_js.set_config_parameter
+  data: { parameter: 54, value: 5 }                         # Threshold Reporting: Humidity Recover Limit
+  target: { device_id: !input devices }                     # 5 %
+- service: zwave_js.set_config_parameter
+  data: { parameter: 55, value: 1000 }                      # Threshold Reporting: High Luminance Limit
+  target: { device_id: !input devices }                     # 1000 lux
+- service: zwave_js.set_config_parameter
+  data: { parameter: 56, value: 100 }                       # Threshold Reporting: Low Luminance Limit
+  target: { device_id: !input devices }                     # 100 lux
+- service: zwave_js.set_config_parameter
+  data: { parameter: 57, value: 100 }                       # Threshold Reporting: Luminance Recover Limit
+  target: { device_id: !input devices }                     # 100 lux
+- service: zwave_js.set_config_parameter
+  data: { parameter: 58, value: 8 }                         # Threshold Reporting: High UV Limit
+  target: { device_id: !input devices }                     # 8
+- service: zwave_js.set_config_parameter
+  data: { parameter: 59, value: 4 }                         # Threshold Reporting: Low UV Limit
+  target: { device_id: !input devices }                     # 4
+- service: zwave_js.set_config_parameter
+  data: { parameter: 60, value: 1 }                         # Threshold Reporting: UV Recover Limit
+  target: { device_id: !input devices }                     # 1
+- service: zwave_js.set_config_parameter
+  data: { parameter: 64, value: 0 }                         # Temperature Scale
+  target: { device_id: !input devices }                     # Celsius
+- service: zwave_js.set_config_parameter
+  data: { parameter: 81, value: 1 }                         # LED Indicator
+  target: { device_id: !input devices }                     # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 82, value: '{{ motion_led }}' }        # LED Indicator Color (Motion)
+  target: { device_id: !input devices }
+- service: zwave_js.set_config_parameter
+  data: { parameter: 83, value: 0 }                         # LED Indicator Color (Temperature)
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 84, value: 0 }                         # LED Indicator Color (Humidity)
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 85, value: 0 }                         # LED Indicator Color (Luminance)
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 86, value: 0 }                         # LED Indicator Color (UV)
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 87, value: 2 }                         # LED Indicator Color (Vibration)
+  target: { device_id: !input devices }                     # Blue
+- service: zwave_js.set_config_parameter
+  data: { parameter: 88, value: 0 }                         # LED Indicator Color (Battery)
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 89, value: '{{ wakeup_led }}' }        # LED Indicator Color (Wakeup Report)
+  target: { device_id: !input devices }
+- service: zwave_js.set_config_parameter
+  data: { parameter: 90, value: 0 }                         # LED Indicator Color (Communications)
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 101, bitmask: 0x01, value: 1 }         # Timed Reporting Group 1: Battery
+  target: { device_id: !input devices }                     # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 101, bitmask: 0x10, value: 1 }         # Timed Reporting Group 1: UV
+  target: { device_id: !input devices }                     # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 101, bitmask: 0x20, value: 1 }         # Timed Reporting Group 1: Temperature
+  target: { device_id: !input devices }                     # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 101, bitmask: 0x40, value: 1 }         # Timed Reporting Group 1: Humidity
+  target: { device_id: !input devices }                     # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 101, bitmask: 0x80, value: 1 }         # Timed Reporting Group 1: Luminance
+  target: { device_id: !input devices }                     # Enable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 102, bitmask: 0x01, value: 0 }         # Timed Reporting Group 2: Battery
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 102, bitmask: 0x10, value: 0 }         # Timed Reporting Group 2: UV
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 102, bitmask: 0x20, value: 0 }         # Timed Reporting Group 2: Temperature
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 102, bitmask: 0x40, value: 0 }         # Timed Reporting Group 2: Humidity
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 102, bitmask: 0x80, value: 0 }         # Timed Reporting Group 2: Luminance
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 103, bitmask: 0x01, value: 0 }         # Timed Reporting Group 3: Battery
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 103, bitmask: 0x10, value: 0 }         # Timed Reporting Group 3: UV
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 103, bitmask: 0x20, value: 0 }         # Timed Reporting Group 3: Temperature
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 103, bitmask: 0x40, value: 0 }         # Timed Reporting Group 3: Humidity
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 103, bitmask: 0x80, value: 0 }         # Timed Reporting Group 3: Luminance
+  target: { device_id: !input devices }                     # Disable
+- service: zwave_js.set_config_parameter
+  data: { parameter: 111, value: 3600 }                     # Timed Reporting Group 1: Interval
+  target: { device_id: !input devices }                     # 3600 seconds
+- service: zwave_js.set_config_parameter
+  data: { parameter: 112, value: 3600 }                     # Timed Reporting Group 2: Interval
+  target: { device_id: !input devices }                     # 3600 seconds
+- service: zwave_js.set_config_parameter
+  data: { parameter: 113, value: 3600 }                     # Timed Reporting Group 3: Interval
+  target: { device_id: !input devices }                     # 3600 seconds
+- service: zwave_js.set_config_parameter
+  data: { parameter: 201, value: !input temp }              # Temperature Offset Value
+  target: { device_id: !input devices }                     # (0.1 °C/°F)
+- service: zwave_js.set_config_parameter
+  data: { parameter: 202, value: 0 }                        # Humidity Offset Value
+  target: { device_id: !input devices }                     # 0 %
+- service: zwave_js.set_config_parameter
+  data: { parameter: 203, value: 0 }                        # Luminance Offset Value
+  target: { device_id: !input devices }                     # 0 lux
+- service: zwave_js.set_config_parameter
+  data: { parameter: 204, value: 0 }                        # UV Offset Value
+  target: { device_id: !input devices }                     # 0
