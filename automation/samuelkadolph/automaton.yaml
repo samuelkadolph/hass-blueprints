@@ -103,6 +103,41 @@ blueprint:
       description: What should we do when the second trigger occurs?
       default: []
       selector: *actions-selector
+    third_trigger:
+      name: Third Trigger
+      description: What should trigger the third set of actions?
+      default: none
+      selector: *trigger-selector
+    third_elevation_helper:
+      name: Third Sun Elevation Helper
+      description: Use a helper or leave empty to specify the elevation below.
+      default:
+      selector: *elevation-helper-selector
+    third_elevation_manual:
+      name: Third Sun Elevation
+      description: What elevation of the Sun should trigger the third set of actions?
+      default: 0.0
+      selector: *elevation-manual-selector
+    third_time_helper:
+      name: Third Time Helper
+      description: Use a helper or leave empty to specify the time below.
+      default:
+      selector: *time-helper-selector
+    third_time_manual:
+      name: Third Time
+      description: When should we trigger the third set of actions?
+      default:
+      selector: *time-manual-selector
+    third_conditions:
+      name: Third Conditions
+      description: What conditions should be checked before running the third set of actions?
+      default: []
+      selector: *conditions-selector
+    third_actions:
+      name: Third Actions
+      description: What should we do when the third trigger occurs?
+      default: []
+      selector: *actions-selector
 
 mode: single
 
@@ -113,6 +148,9 @@ trigger_variables:
   second_elevation_helper: !input second_elevation_helper
   second_elevation_manual: !input second_elevation_manual
   second_trigger: !input second_trigger
+  third_elevation_helper: !input third_elevation_helper
+  third_elevation_manual: !input third_elevation_manual
+  third_trigger: !input third_trigger
 
 trigger:
 - platform: template
@@ -153,11 +191,32 @@ trigger:
   at: !input second_time_manual
   id: secondTimeManual
 
+- platform: template
+  value_template: '{{ third_trigger == "elevation_above" and third_elevation_helper != None and state_attr("sun.sun", "elevation") > states(third_elevation_helper) | float }}'
+  id: thirdElevation
+- platform: template
+  value_template: '{{ third_trigger == "elevation_above" and third_elevation_helper == None and state_attr("sun.sun", "elevation") > third_elevation_manual }}'
+  id: thirdElevation
+- platform: template
+  value_template: '{{ third_trigger == "elevation_below" and third_elevation_helper != None and state_attr("sun.sun", "elevation") < states(third_elevation_helper) | float }}'
+  id: thirdElevation
+- platform: template
+  value_template: '{{ third_trigger == "elevation_below" and third_elevation_helper == None and state_attr("sun.sun", "elevation") < third_elevation_manual }}'
+  id: thirdElevation
+- platform: time
+  at: !input third_time_helper
+  id: thirdTimeHelper
+- platform: time
+  at: !input third_time_manual
+  id: thirdTimeManual
+
 variables:
   first_time_helper: !input first_time_helper
   first_trigger: !input first_trigger
   second_time_helper: !input second_time_helper
   second_trigger: !input second_trigger
+  third_time_helper: !input third_time_helper
+  third_trigger: !input third_trigger
 
 action:
 - choose:
@@ -178,3 +237,12 @@ action:
       - '{{ trigger.id == "secondTimeManual" and second_trigger == "time" and second_time_helper == None }}'
     - condition: !input second_conditions
     sequence: !input second_actions
+
+  - conditions:
+    - condition: or
+      conditions:
+      - '{{ trigger.id == "thirdElevation" }}'
+      - '{{ trigger.id == "thirdTimeHelper" and third_trigger == "time" and third_time_helper != None }}'
+      - '{{ trigger.id == "thirdTimeManual" and third_trigger == "time" and third_time_helper == None }}'
+    - condition: !input third_conditions
+    sequence: !input third_actions
