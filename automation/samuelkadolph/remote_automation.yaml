@@ -44,11 +44,11 @@ trigger:
 action:
 - choose:
   - conditions:
-    - '{{ trigger.to_state.state == "on" }}'
+    - '{{ trigger.from_state.state == "off" and trigger.to_state.state == "on" }}'
     - condition: !input on_conditions
     sequence: !input on_actions
 
   - conditions:
-    - '{{ trigger.to_state.state == "off" }}'
+    - '{{ trigger.from_state.state == "on" and trigger.to_state.state == "off" }}'
     - condition: !input off_conditions
     sequence: !input off_actions
