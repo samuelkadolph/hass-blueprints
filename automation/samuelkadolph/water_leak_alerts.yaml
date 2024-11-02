@@ -43,13 +43,15 @@ action:
       match: any
       state: 'on'
     sequence:
-    - service: notify.notify
+    - action: notify.notify
       data:
-        data: { push: { sound: { name: Default, critical: true, volume: true } } }
-        title: WATER LEAK!
-        message: 'Water detected in {{ area }}!'
-    - service: notify.alexa_media_everywhere
+        data: { push: { sound: { name: Default, critical: 1, volume: 1.0 } } }
+        message: 'Water leak in {{ area }}!'
+        title: Water Leak!
+    - action: notify.alexa_media
       data:
         data: { type: announce }
-        message: 'WATER LEAK! Water detected in {{ area }}!'
+        message: 'Alert! Water leak in {{ area }}!'
+        target: media_player.everywhere
+        title: WATER LEAK!
     - delay: !input delay

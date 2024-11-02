@@ -50,13 +50,15 @@ action:
       match: any
       state: 'on'
     sequence:
-    - service: notify.notify
+    - action: notify.notify
       data:
-        data: { push: { sound: { name: Default, critical: true, volume: true } } }
-        title: Door Left Open
+        data: { push: { sound: { name: Default, critical: 1, volume: 1.0 } } }
         message: '{{ door }} door has been left open!'
-    - service: notify.alexa_media_everywhere
+        title: Door Left Open
+    - action: notify.alexa_media
       data:
         data: { type: announce }
         message: 'Alert! {{ door }} door has been left open!'
+        target: media_player.everywhere
+        title: Door Left Open
     - delay: !input delay
