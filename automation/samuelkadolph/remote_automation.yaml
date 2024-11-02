@@ -1,6 +1,6 @@
 blueprint:
   name: Remote Automation
-  description: Execute sets of actions when a Remote turns on or off.
+  description: Execute sets of actions when a remote turns on or off or changes.
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/remote_automation.yaml
@@ -13,7 +13,7 @@ blueprint:
           domain: remote
     on_conditions:
       name: On Conditions
-      description: What other conditions should be checked before running the on actions?
+      description: What conditions should be checked before running the on actions?
       default: []
       selector: &conditions-selector
         condition:
@@ -25,12 +25,22 @@ blueprint:
         action:
     off_conditions:
       name: Off Conditions
-      description: What other conditions should be checked before running the off actions?
+      description: What conditions should be checked before running the off actions?
       default: []
       selector: *conditions-selector
     off_actions:
       name: Off Actions
       description: What should we do when the remote turns off?
+      default: []
+      selector: *actions-selector
+    change_conditions:
+      name: Change Conditions
+      description: What conditions should be checked before running the on change actions?
+      default: []
+      selector: *conditions-selector
+    change_actions:
+      name: Change Actions
+      description: What should we do when the remote changes?
       default: []
       selector: *actions-selector
 
@@ -39,16 +49,16 @@ mode: single
 trigger:
 - platform: state
   entity_id: !input remote
-  to: ['on', 'off']
 
 action:
-- choose:
-  - conditions:
-    - '{{ trigger.from_state.state == "off" and trigger.to_state.state == "on" }}'
-    - condition: !input on_conditions
-    sequence: !input on_actions
-
-  - conditions:
-    - '{{ trigger.from_state.state == "on" and trigger.to_state.state == "off" }}'
-    - condition: !input off_conditions
-    sequence: !input off_actions
+- if:
+  - '{{ trigger.from_state.state == "off" and trigger.to_state.state == "on" }}'
+  - condition: !input on_conditions
+  then: !input on_actions
+- if:
+  - '{{ trigger.from_state.state == "on" and trigger.to_state.state == "off" }}'
+  - condition: !input on_conditions
+  then: !input on_actions
+- if:
+  - condition: !input change_conditions
+  then: !input change_actions
