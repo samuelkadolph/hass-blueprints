@@ -1,9 +1,9 @@
 blueprint:
-  name: Zooz ZEN76/77 Lights
-  description: Control lights (or fans/switches) with paddle taps on a Zooz ZEN67/77 switch
+  name: Zooz ZEN76/77 Actions
+  description: Run custom actions with paddle taps on a Zooz ZEN67/77 switch
   domain: automation
   author: Samuel Kadolph
-  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen7677_lights.yaml
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen7677_actions.yaml
   input:
     switch:
       name: Switch
@@ -31,13 +31,17 @@ blueprint:
             value: 'KeyPressed4x'
           - label: 'Quintuple'
             value: 'KeyPressed5x'
-    subjects:
-      name: Lights
-      description: Which lights (or fans/switches) to control with the paddles?
-      selector:
-        entity:
-          domain: ['fan', 'light', 'switch']
-          multiple: true
+    up_actions:
+      name: Up Actions
+      description: What should we do when the up paddle is tapped?
+      default: []
+      selector: &actions-selector
+        action:
+    down_actions:
+      name: Down Actions
+      description: What should we do when the down paddle is tapped?
+      default: []
+      selector: *actions-selector
 
 mode: single
 max_exceeded: silent
@@ -63,30 +67,12 @@ triggers:
     value: '{{ paddle_taps }}'
   id: down_pressed
 
-variables:
-  subjects: !input subjects
-  fans: '{{ subjects | select("search", "^fan.") | list }}'
-  lights: '{{ subjects | select("search", "^light.") | list }}'
-  switches: '{{ subjects | select("search", "^switch.") | list }}'
-
-action:
+actions:
 - choose:
   - conditions:
     - '{{ trigger.id == "up_pressed" }}'
-    sequence:
-    - action: fan.turn_on
-      target: { entity_id: '{{ fans }}' }
-    - action: light.turn_on
-      target: { entity_id: '{{ lights }}' }
-    - action: switch.turn_on
-      target: { entity_id: '{{ switches }}' }
+    sequence: !input up_actions
 
   - conditions:
     - '{{ trigger.id == "down_pressed" }}'
-    sequence:
-    - action: fan.turn_off
-      target: { entity_id: '{{ fans }}' }
-    - action: light.turn_off
-      target: { entity_id: '{{ lights }}' }
-    - action: switch.turn_off
-      target: { entity_id: '{{ switches }}' }
+    sequence: !input down_actions
