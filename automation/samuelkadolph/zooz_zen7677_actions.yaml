@@ -11,8 +11,8 @@ blueprint:
       selector:
         device:
           filter:
-          - { manufacturer: Zooz, model: ZEN76 800LR }
-          - { manufacturer: Zooz, model: ZEN77 800LR }
+          - { manufacturer: Zooz, model: ZEN76 }
+          - { manufacturer: Zooz, model: ZEN77 }
     paddle_taps:
       name: Paddle Taps
       description: How many taps on a paddle are required?
