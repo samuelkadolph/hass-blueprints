@@ -1,23 +1,22 @@
 blueprint:
   name: HomeSeer WX-300 Lights
-  description: Binds paddle presses on a HomeSeer WX-300 to control lights (or fans/switches)
+  description: Control lights (or fans/switches) with paddle taps on a HomeSeer WX-300 switch
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/homeseer_wx300_lights.yaml
   input:
     switch:
       name: Switch
-      description: Which switch to use
+      description: Which switch to use?
       selector:
         device:
           filter:
           - { manufacturer: HomeSeer Technologies, model: HS-WX300 }
           - { manufacturer: HomeSeer Technologies, model: HS-WD200+ }
           - { manufacturer: HomeSeer Technologies, model: HS-WS200+ }
-          - { manufacturer: HomeSeer Technologies, model: WD-100 }
     paddle_taps:
       name: Paddle Taps
-      description: How many taps on a paddle to require
+      description: How many taps on a paddle are required?
       default: 'KeyPressed'
       selector:
         select:
@@ -35,7 +34,7 @@ blueprint:
             value: 'KeyPressed5x'
     subjects:
       name: Lights
-      description: Which lights (or fans/switches) to control with the paddles
+      description: Which lights (or fans/switches) to control with the paddles?
       selector:
         entity:
           domain: ['fan', 'light', 'switch']
@@ -47,23 +46,23 @@ max_exceeded: silent
 trigger_variables:
   paddle_taps: !input paddle_taps
 
-trigger:
-- platform: event
+triggers:
+- trigger: event
   event_type: zwave_js_value_notification
   event_data:
     device_id: !input switch
     command_class_name: Central Scene
     property_key: '001'
     value: '{{ paddle_taps }}'
-  id: upPressed
-- platform: event
+  id: up_pressed
+- trigger: event
   event_type: zwave_js_value_notification
   event_data:
     device_id: !input switch
     command_class_name: Central Scene
     property_key: '002'
     value: '{{ paddle_taps }}'
-  id: downPressed
+  id: down_pressed
 
 variables:
   subjects: !input subjects
@@ -74,21 +73,21 @@ variables:
 action:
 - choose:
   - conditions:
-    - '{{ trigger.id == "upPressed" }}'
+    - '{{ trigger.id == "up_pressed" }}'
     sequence:
-    - service: fan.turn_on
+    - action: fan.turn_on
       target: { entity_id: '{{ fans }}' }
-    - service: light.turn_on
+    - action: light.turn_on
       target: { entity_id: '{{ lights }}' }
-    - service: switch.turn_on
+    - action: switch.turn_on
       target: { entity_id: '{{ switches }}' }
 
   - conditions:
-    - '{{ trigger.id == "downPressed" }}'
+    - '{{ trigger.id == "down_pressed" }}'
     sequence:
-    - service: fan.turn_off
+    - action: fan.turn_off
       target: { entity_id: '{{ fans }}' }
-    - service: light.turn_off
+    - action: light.turn_off
       target: { entity_id: '{{ lights }}' }
-    - service: switch.turn_off
+    - action: switch.turn_off
       target: { entity_id: '{{ switches }}' }
