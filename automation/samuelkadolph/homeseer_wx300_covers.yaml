@@ -1,23 +1,22 @@
 blueprint:
   name: HomeSeer WX-300 Covers
-  description: Binds paddle presses on a HomeSeer WX-300 to control covers
+  description: Control covers with paddle taps on a HomeSeer WX-300 switch
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/homeseer_wx300_covers.yaml
   input:
     switch:
       name: Switch
-      description: Which switch to use
+      description: Which switch to use?
       selector:
         device:
           filter:
           - { manufacturer: HomeSeer Technologies, model: HS-WX300 }
           - { manufacturer: HomeSeer Technologies, model: HS-WD200+ }
           - { manufacturer: HomeSeer Technologies, model: HS-WS200+ }
-          - { manufacturer: HomeSeer Technologies, model: WD-100 }
     paddle_taps:
       name: Paddle Taps
-      description: How many taps on a paddle to require
+      description: How many taps on a paddle are required?
       default: 'KeyPressed'
       selector:
         select:
@@ -35,7 +34,7 @@ blueprint:
             value: 'KeyPressed5x'
     paddle_hold:
       name: Paddle Hold
-      description: Enable opening and closing when holding down a paddle
+      description: Open and close the covers when holding down a paddle?
       default: true
       selector:
         boolean:
@@ -50,169 +49,171 @@ blueprint:
           domain: input_number
     covers:
       name: Covers
-      description: Which covers to control with the switch paddles
+      description: Which covers to control with the switch paddles?
       selector:
         entity:
           domain: cover
           multiple: true
 
 mode: single
+max_exceeded: silent
 
 trigger_variables:
   paddle_taps: !input paddle_taps
 
-trigger:
-- platform: state
+triggers:
+- trigger: state
   attribute: current_position
   entity_id: !input covers
   to: [0, 100]
   for: { seconds: 30 }
   id: reset
-- platform: event
+- trigger: event
   event_type: zwave_js_value_notification
   event_data:
     device_id: !input switch
     command_class_name: Central Scene
     property_key: '001'
     value: '{{ paddle_taps }}'
-  id: upPressed
-- platform: event
+  id: up_pressed
+- trigger: event
   event_type: zwave_js_value_notification
   event_data:
     device_id: !input switch
     command_class_name: Central Scene
     property_key: '001'
     value: 'KeyHeldDown'
-  id: upHeldDown
-- platform: event
+  id: up_held_down
+- trigger: event
   event_type: zwave_js_value_notification
   event_data:
     device_id: !input switch
     command_class_name: Central Scene
     property_key: '001'
     value: 'KeyReleased'
-  id: upReleased
-- platform: event
+  id: up_released
+- trigger: event
   event_type: zwave_js_value_notification
   event_data:
     device_id: !input switch
     command_class_name: Central Scene
     property_key: '002'
     value: '{{ paddle_taps }}'
-  id: downPressed
-- platform: event
+  id: down_pressed
+- trigger: event
   event_type: zwave_js_value_notification
   event_data:
     device_id: !input switch
     command_class_name: Central Scene
     property_key: '002'
     value: 'KeyHeldDown'
-  id: downHeldDown
-- platform: event
+  id: down_held_down
+- trigger: event
   event_type: zwave_js_value_notification
   event_data:
     device_id: !input switch
     command_class_name: Central Scene
     property_key: '002'
     value: 'KeyReleased'
-  id: downReleased
+  id: down_released
 
 variables:
   paddle_hold: !input paddle_hold
   state_variable: !input state_variable
   state: '{{ int(states(state_variable)) }}'
+  # 0=nothing 1=up 2=up_stopped 3=down 4=down_stopped
 
 action:
 - choose:
   - conditions:
     - '{{ trigger.id == "reset" }}'
     sequence:
-    - service: input_number.set_value
+    - action: input_number.set_value
       data: { value: 0 }
       target: { entity_id: !input state_variable }
 
   - conditions:
-    - '{{ trigger.id == "upPressed" }}'
+    - '{{ trigger.id == "up_pressed" }}'
     sequence:
     - choose:
       - conditions:
         - '{{ state in [0, 2, 4] }}'
         sequence:
-        - service: cover.open_cover
+        - action: cover.open_cover
           target: { entity_id: !input covers }
-        - service: input_number.set_value
+        - action: input_number.set_value
           data: { value: 1 }
           target: { entity_id: !input state_variable }
       - conditions:
         - '{{ state == 3 }}'
         sequence:
-        - service: cover.stop_cover
+        - action: cover.stop_cover
           target: { entity_id: !input covers }
-        - service: input_number.set_value
+        - action: input_number.set_value
           data: { value: 4 }
           target: { entity_id: !input state_variable }
 
   - conditions:
-    - '{{ trigger.id == "upHeldDown" }}'
+    - '{{ trigger.id == "up_held_down" }}'
     - '{{ paddle_hold }}'
     - '{{ state in [0, 2, 3, 4] }}'
     sequence:
-    - service: cover.open_cover
+    - action: cover.open_cover
       target: { entity_id: !input covers }
-    - service: input_number.set_value
+    - action: input_number.set_value
       data: { value: 1 }
       target: { entity_id: !input state_variable }
 
   - conditions:
-    - '{{ trigger.id == "upReleased" }}'
+    - '{{ trigger.id == "up_released" }}'
     - '{{ paddle_hold }}'
     - '{{ state == 1 }}'
     sequence:
-    - service: cover.stop_cover
+    - action: cover.stop_cover
       target: { entity_id: !input covers }
-    - service: input_number.set_value
+    - action: input_number.set_value
       data: { value: 2 }
       target: { entity_id: !input state_variable }
 
   - conditions:
-    - '{{ trigger.id == "downPressed" }}'
+    - '{{ trigger.id == "down_pressed" }}'
     sequence:
     - choose:
       - conditions:
         - '{{ state in [0, 2, 4] }}'
         sequence:
-        - service: cover.close_cover
+        - action: cover.close_cover
           target: { entity_id: !input covers }
-        - service: input_number.set_value
+        - action: input_number.set_value
           data: { value: 3 }
           target: { entity_id: !input state_variable }
       - conditions:
         - '{{ state == 1 }}'
         sequence:
-        - service: cover.stop_cover
+        - action: cover.stop_cover
           target: { entity_id: !input covers }
-        - service: input_number.set_value
+        - action: input_number.set_value
           data: { value: 2 }
           target: { entity_id: !input state_variable }
 
   - conditions:
-    - '{{ trigger.id == "downHeldDown" }}'
+    - '{{ trigger.id == "down_held_down" }}'
     - '{{ paddle_hold }}'
     - '{{ state in [0, 1, 2, 4] }}'
     sequence:
-    - service: cover.close_cover
+    - action: cover.close_cover
       target: { entity_id: !input covers }
-    - service: input_number.set_value
+    - action: input_number.set_value
       data: { value: 3 }
       target: { entity_id: !input state_variable }
 
   - conditions:
-    - '{{ trigger.id == "downReleased" }}'
+    - '{{ trigger.id == "down_released" }}'
     - '{{ paddle_hold }}'
     - '{{ state == 3 }}'
     sequence:
-    - service: cover.stop_cover
+    - action: cover.stop_cover
       target: { entity_id: !input covers }
-    - service: input_number.set_value
+    - action: input_number.set_value
       data: { value: 4 }
       target: { entity_id: !input state_variable }

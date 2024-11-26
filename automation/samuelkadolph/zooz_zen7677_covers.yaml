@@ -55,6 +55,7 @@ blueprint:
           multiple: true
 
 mode: single
+max_exceeded: silent
 
 trigger_variables:
   paddle_taps: !input paddle_taps
