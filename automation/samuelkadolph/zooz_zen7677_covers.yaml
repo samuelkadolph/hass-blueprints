@@ -97,7 +97,7 @@ triggers:
     command_class_name: Central Scene
     property_key: '002'
     value: '{{ paddle_taps }}'
-  id: downPressed
+  id: down_pressed
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
@@ -174,7 +174,7 @@ action:
       target: { entity_id: !input state_variable }
 
   - conditions:
-    - '{{ trigger.id == "downPressed" }}'
+    - '{{ trigger.id == "down_pressed" }}'
     sequence:
     - choose:
       - conditions:
