@@ -10,12 +10,23 @@ blueprint:
       description: What is the name of the door for the alert?
       selector:
         text:
-    door_sensors:
-      name: Door Sensors
-      description: Which sensors should be monitored?
+    binary_sensors:
+      name: Binary Sensors
+      description: Which binary sensors should be monitored?
+      default: []
       selector:
         entity:
-          domain: binary_sensor
+          filter:
+          - domain: binary_sensor
+          multiple: true
+    door_sensors:
+      name: Door Sensors
+      description: Which door sensors should be monitored?
+      default: []
+      selector:
+        entity:
+          filter:
+          - domain: sensor
           multiple: true
     open_for:
       name: Open For
@@ -33,10 +44,15 @@ blueprint:
 mode: single
 max_exceeded: silent
 
-trigger:
-- platform: state
-  entity_id: !input door_sensors
+
+triggers:
+- trigger: state
+  entity_id: !input binary_sensors
   to: 'on'
+  for: !input open_for
+- trigger: state
+  entity_id: !input door_sensors
+  to: open
   for: !input open_for
 
 variables:
@@ -45,10 +61,16 @@ variables:
 action:
 - repeat:
     while:
-    - condition: state
-      entity_id: !input door_sensors
-      match: any
-      state: 'on'
+    - condition: or
+      conditions:
+      - condition: state
+        entity_id: !input binary_sensors
+        match: any
+        state: 'on'
+      - condition: state
+        entity_id: !input door_sensors
+        match: any
+        state: open
     sequence:
     - action: notify.notify
       data:
