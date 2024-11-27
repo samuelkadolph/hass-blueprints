@@ -44,7 +44,6 @@ blueprint:
 mode: single
 max_exceeded: silent
 
-
 triggers:
 - trigger: state
   entity_id: !input binary_sensors
@@ -58,7 +57,7 @@ triggers:
 variables:
   door: !input door
 
-action:
+actions:
 - repeat:
     while:
     - condition: or

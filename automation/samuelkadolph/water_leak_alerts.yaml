@@ -35,7 +35,7 @@ trigger:
 variables:
   area: !input area
 
-action:
+actions:
 - repeat:
     while:
     - condition: state
