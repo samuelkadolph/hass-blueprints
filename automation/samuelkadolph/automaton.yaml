@@ -1,6 +1,6 @@
 blueprint:
   name: Automaton
-  description: Generic automation to execute sets of actions when triggered by the Sun elevation or time.
+  description: Generic automation to execute actions when triggered by sun elevation or time
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/automaton.yaml
@@ -152,63 +152,63 @@ trigger_variables:
   third_elevation_manual: !input third_elevation_manual
   third_trigger: !input third_trigger
 
-trigger:
-- platform: template
+triggers:
+- trigger: template
   value_template: '{{ first_trigger == "elevation_above" and first_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(first_elevation_helper) | float) }}'
-  id: firstElevation
-- platform: template
+  id: first_elevation
+- trigger: template
   value_template: '{{ first_trigger == "elevation_above" and first_elevation_helper == None and state_attr("sun.sun", "elevation") > first_elevation_manual }}'
-  id: firstElevation
-- platform: template
+  id: first_elevation
+- trigger: template
   value_template: '{{ first_trigger == "elevation_below" and first_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(first_elevation_helper) | float) }}'
-  id: firstElevation
-- platform: template
+  id: first_elevation
+- trigger: template
   value_template: '{{ first_trigger == "elevation_below" and first_elevation_helper == None and state_attr("sun.sun", "elevation") < first_elevation_manual }}'
-  id: firstElevation
-- platform: time
+  id: first_elevation
+- trigger: time
   at: !input first_time_helper
-  id: firstTimeHelper
-- platform: time
+  id: first_time_helper
+- trigger: time
   at: !input first_time_manual
-  id: firstTimeManual
+  id: first_time_manual
 
-- platform: template
+- trigger: template
   value_template: '{{ second_trigger == "elevation_above" and second_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(second_elevation_helper) | float) }}'
-  id: secondElevation
-- platform: template
+  id: second_elevation
+- trigger: template
   value_template: '{{ second_trigger == "elevation_above" and second_elevation_helper == None and state_attr("sun.sun", "elevation") > second_elevation_manual }}'
-  id: secondElevation
-- platform: template
+  id: second_elevation
+- trigger: template
   value_template: '{{ second_trigger == "elevation_below" and second_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(second_elevation_helper) | float) }}'
-  id: secondElevation
-- platform: template
+  id: second_elevation
+- trigger: template
   value_template: '{{ second_trigger == "elevation_below" and second_elevation_helper == None and state_attr("sun.sun", "elevation") < second_elevation_manual }}'
-  id: secondElevation
-- platform: time
+  id: second_elevation
+- trigger: time
   at: !input second_time_helper
-  id: secondTimeHelper
-- platform: time
+  id: second_time_helper
+- trigger: time
   at: !input second_time_manual
-  id: secondTimeManual
+  id: second_time_manual
 
-- platform: template
+- trigger: template
   value_template: '{{ third_trigger == "elevation_above" and third_elevation_helper != None and state_attr("sun.sun", "elevation") > states(third_elevation_helper) | float }}'
-  id: thirdElevation
-- platform: template
+  id: third_elevation
+- trigger: template
   value_template: '{{ third_trigger == "elevation_above" and third_elevation_helper == None and state_attr("sun.sun", "elevation") > third_elevation_manual }}'
-  id: thirdElevation
-- platform: template
+  id: third_elevation
+- trigger: template
   value_template: '{{ third_trigger == "elevation_below" and third_elevation_helper != None and state_attr("sun.sun", "elevation") < states(third_elevation_helper) | float }}'
-  id: thirdElevation
-- platform: template
+  id: third_elevation
+- trigger: template
   value_template: '{{ third_trigger == "elevation_below" and third_elevation_helper == None and state_attr("sun.sun", "elevation") < third_elevation_manual }}'
-  id: thirdElevation
-- platform: time
+  id: third_elevation
+- trigger: time
   at: !input third_time_helper
-  id: thirdTimeHelper
-- platform: time
+  id: third_time_helper
+- trigger: time
   at: !input third_time_manual
-  id: thirdTimeManual
+  id: third_time_manual
 
 variables:
   first_time_helper: !input first_time_helper
@@ -218,31 +218,31 @@ variables:
   third_time_helper: !input third_time_helper
   third_trigger: !input third_trigger
 
-action:
+actions:
 - choose:
   - conditions:
     - condition: or
       conditions:
-      - '{{ trigger.id == "firstElevation" }}'
-      - '{{ trigger.id == "firstTimeHelper" and first_trigger == "time" and first_time_helper != None }}'
-      - '{{ trigger.id == "firstTimeManual" and first_trigger == "time" and first_time_helper == None }}'
+      - '{{ trigger.id == "first_elevation" }}'
+      - '{{ trigger.id == "first_time_helper" and first_trigger == "time" and first_time_helper != None }}'
+      - '{{ trigger.id == "first_time_manual" and first_trigger == "time" and first_time_helper == None }}'
     - condition: !input first_conditions
     sequence: !input first_actions
 
   - conditions:
     - condition: or
       conditions:
-      - '{{ trigger.id == "secondElevation" }}'
-      - '{{ trigger.id == "secondTimeHelper" and second_trigger == "time" and second_time_helper != None }}'
-      - '{{ trigger.id == "secondTimeManual" and second_trigger == "time" and second_time_helper == None }}'
+      - '{{ trigger.id == "second_elevation" }}'
+      - '{{ trigger.id == "second_time_helper" and second_trigger == "time" and second_time_helper != None }}'
+      - '{{ trigger.id == "second_time_manual" and second_trigger == "time" and second_time_helper == None }}'
     - condition: !input second_conditions
     sequence: !input second_actions
 
   - conditions:
     - condition: or
       conditions:
-      - '{{ trigger.id == "thirdElevation" }}'
-      - '{{ trigger.id == "thirdTimeHelper" and third_trigger == "time" and third_time_helper != None }}'
-      - '{{ trigger.id == "thirdTimeManual" and third_trigger == "time" and third_time_helper == None }}'
+      - '{{ trigger.id == "third_elevation" }}'
+      - '{{ trigger.id == "third_time_helper" and third_trigger == "time" and third_time_helper != None }}'
+      - '{{ trigger.id == "third_time_manual" and third_trigger == "time" and third_time_helper == None }}'
     - condition: !input third_conditions
     sequence: !input third_actions
