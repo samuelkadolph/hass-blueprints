@@ -111,6 +111,7 @@ blueprint:
     zone:
       name: Zone
       description: Which zone must be empty to enable away lighting?
+      default: zone.home
       selector:
         entity:
           domain: zone
@@ -125,32 +126,32 @@ trigger_variables:
   on_elevation_manual: !input on_elevation_manual
   on_trigger: !input on_trigger
 
-trigger:
-- platform: template
+triggers:
+- trigger: template
   value_template: '{{ on_trigger == "elevation" and on_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(on_elevation_helper) | float) }}'
-  id: onElevation
-- platform: template
+  id: on_elevation
+- trigger: template
   value_template: '{{ on_trigger == "elevation" and on_elevation_helper == None and state_attr("sun.sun", "elevation") < on_elevation_manual }}'
-  id: onElevation
-- platform: time
+  id: on_elevation
+- trigger: time
   at: !input on_time_helper
-  id: onTimeHelper
-- platform: time
+  id: on_time_helper
+- trigger: time
   at: !input on_time_manual
-  id: onTimeManual
+  id: on_time_manual
 
-- platform: template
+- trigger: template
   value_template: '{{ off_trigger == "elevation" and off_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(off_elevation_helper) | float) }}'
-  id: offElevation
-- platform: template
+  id: off_elevation
+- trigger: template
   value_template: '{{ off_trigger == "elevation" and off_elevation_helper == None and state_attr("sun.sun", "elevation") > off_elevation_manual }}'
-  id: offElevation
-- platform: time
+  id: off_elevation
+- trigger: time
   at: !input off_time_helper
-  id: offTimeHelper
-- platform: time
+  id: off_time_helper
+- trigger: time
   at: !input off_time_manual
-  id: offTimeManual
+  id: off_time_manual
 
 variables:
   off_delay: !input off_delay
@@ -162,35 +163,33 @@ variables:
   on_time_helper: !input on_time_helper
   on_trigger: !input on_trigger
 
-condition:
+conditions:
 - condition: state
   entity_id: !input zone
   state: "0"
 
-action:
+actions:
 - choose:
   - conditions:
     - condition: or
       conditions:
-      - '{{ trigger.id == "onElevation" }}'
-      - '{{ trigger.id == "onTimeHelper" and on_trigger == "time" and on_time_helper != None }}'
-      - '{{ trigger.id == "onTimeManual" and on_trigger == "time" and on_time_helper == None }}'
+      - '{{ trigger.id == "on_elevation" }}'
+      - '{{ trigger.id == "on_time_helper" and on_trigger == "time" and on_time_helper != None }}'
+      - '{{ trigger.id == "on_time_manual" and on_trigger == "time" and on_time_helper == None }}'
     - condition: !input on_conditions
     sequence:
-    - delay:
-        seconds: '{{ on_delay_rand }}'
-    - service: light.turn_on
+    - delay: { seconds: '{{ on_delay_rand }}' }
+    - action: light.turn_on
       target: { entity_id: !input lights }
 
   - conditions:
     - condition: or
       conditions:
-      - '{{ trigger.id == "offElevation" }}'
-      - '{{ trigger.id == "offTimeHelper" and off_trigger == "time" and off_time_helper != None }}'
-      - '{{ trigger.id == "offTimeManual" and off_trigger == "time" and off_time_helper == None }}'
+      - '{{ trigger.id == "off_elevation" }}'
+      - '{{ trigger.id == "off_time_helper" and off_trigger == "time" and off_time_helper != None }}'
+      - '{{ trigger.id == "off_time_manual" and off_trigger == "time" and off_time_helper == None }}'
     - condition: !input off_conditions
     sequence:
-    - delay:
-        seconds: '{{ off_delay_rand }}'
-    - service: light.turn_off
+    - delay: { seconds: '{{ off_delay_rand }}' }
+    - action: light.turn_off
       target: { entity_id: !input lights }
