@@ -123,7 +123,7 @@ variables:
   state: '{{ int(states(state_variable)) }}'
   # 0=nothing 1=up 2=up_stopped 3=down 4=down_stopped
 
-action:
+actions:
 - choose:
   - conditions:
     - '{{ trigger.id == "reset" }}'

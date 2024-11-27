@@ -70,7 +70,7 @@ variables:
   lights: '{{ subjects | select("search", "^light.") | list }}'
   switches: '{{ subjects | select("search", "^switch.") | list }}'
 
-action:
+actions:
 - choose:
   - conditions:
     - '{{ trigger.id == "up_pressed" }}'
