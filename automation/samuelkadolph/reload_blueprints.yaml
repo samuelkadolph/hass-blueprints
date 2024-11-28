@@ -8,29 +8,29 @@ blueprint:
 
 mode: single
 
-trigger:
-- platform: event
+triggers:
+- trigger: event
   event_type: folder_watcher
   event_data:
     event_type: closed
-- platform: event
+- trigger: event
   event_type: folder_watcher
   event_data:
     event_type: moved
 
-condition:
-  - condition: or
-    conditions:
-    - '{{ trigger.event.data.event_type == "closed" and trigger.event.data.file[-5:] == ".yaml" }}'
-    - '{{ trigger.event.data.event_type == "moved" and trigger.event.data.dest_file[-5:] == ".yaml" }}'
+conditions:
+- condition: or
+  conditions:
+  - '{{ trigger.event.data.event_type == "closed" and trigger.event.data.file[-5:] == ".yaml" }}'
+  - '{{ trigger.event.data.event_type == "moved" and trigger.event.data.dest_file[-5:] == ".yaml" }}'
 
 action:
 - choose:
   - conditions:
     - '{{ "blueprints/automation" in trigger.event.data.folder }}'
     sequence:
-    - service: automation.reload
+    - action: automation.reload
   - conditions:
     - '{{ "blueprints/script" in trigger.event.data.folder }}'
     sequence:
-    - service: script.reload
+    - action: script.reload
