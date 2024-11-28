@@ -1,6 +1,6 @@
 blueprint:
   name: Automaton
-  description: Generic automation to execute actions when triggered by sun elevation or time
+  description: Generic automation to execute actions when triggered by sun elevation or time.
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/automaton.yaml

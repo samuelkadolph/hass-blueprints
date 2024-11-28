@@ -1,6 +1,6 @@
 blueprint:
   name: Zooz ZEN76/77 Covers
-  description: Control covers with paddle taps on a Zooz ZEN67/77 switch
+  description: Control covers with paddle taps on a Zooz ZEN67/77 switch.
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen7677_covers.yaml

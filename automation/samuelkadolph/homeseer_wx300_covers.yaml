@@ -1,6 +1,6 @@
 blueprint:
   name: HomeSeer WX-300 Covers
-  description: Control covers with paddle taps on a HomeSeer WX-300 switch
+  description: Control covers with paddle taps on a HomeSeer WX-300 switch.
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/homeseer_wx300_covers.yaml

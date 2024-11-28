@@ -1,6 +1,6 @@
 blueprint:
   name: Zooz ZEN76/77 Lights
-  description: Control lights (or fans/switches) with paddle taps on a Zooz ZEN67/77 switch
+  description: Control lights (or fans/switches) with paddle taps on a Zooz ZEN67/77 switch.
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen7677_lights.yaml
@@ -65,9 +65,9 @@ triggers:
 
 variables:
   subjects: !input subjects
-  fans: '{{ subjects | select("search", "^fan.") | list }}'
-  lights: '{{ subjects | select("search", "^light.") | list }}'
-  switches: '{{ subjects | select("search", "^switch.") | list }}'
+  fans: '{{ subjects | select("search", "^fan\.") | list }}'
+  lights: '{{ subjects | select("search", "^light\.") | list }}'
+  switches: '{{ subjects | select("search", "^switch\.") | list }}'
 
 actions:
 - choose:

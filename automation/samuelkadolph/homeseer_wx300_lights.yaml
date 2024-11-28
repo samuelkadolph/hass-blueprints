@@ -1,6 +1,6 @@
 blueprint:
   name: HomeSeer WX-300 Lights
-  description: Control lights (or fans/switches) with paddle taps on a HomeSeer WX-300 switch
+  description: Control lights (or fans/switches) with paddle taps on a HomeSeer WX-300 switch.
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/homeseer_wx300_lights.yaml
@@ -66,9 +66,9 @@ triggers:
 
 variables:
   subjects: !input subjects
-  fans: '{{ subjects | select("search", "^fan.") | list }}'
-  lights: '{{ subjects | select("search", "^light.") | list }}'
-  switches: '{{ subjects | select("search", "^switch.") | list }}'
+  fans: '{{ subjects | select("search", "^fan\.") | list }}'
+  lights: '{{ subjects | select("search", "^light\.") | list }}'
+  switches: '{{ subjects | select("search", "^switch\.") | list }}'
 
 actions:
 - choose:
