@@ -1,22 +1,21 @@
 blueprint:
   name: Zooz ZEN32 Lights
-  description: Binds a key on a Zooz ZEN32 to control lights (or fans/switches)
+  description: Control lights (or fans/switches) with a Zooz ZEN32 scene controller.
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen32_lights.yaml
   input:
     controller:
       name: Controller
-      description: Which Zooz ZEN32 controller to use?
+      description: Which scene controller to use?
       selector:
         device:
           filter:
           - { manufacturer: Zooz, model: ZEN32 }
-          - { manufacturer: Zooz, model: ZEN32 800LR }
     key:
       name: Key
       default: '005'
-      description: Which key on the controller to use
+      description: Which button on the controller to use?
       selector:
         select:
           mode: dropdown
@@ -33,19 +32,19 @@ blueprint:
             value: '004'
     led_enable:
       name: Enable LED
-      description: Enable changing the LED to reflect the state of the lights
+      description: Use the LED to show the state of the lights?
       default: true
       selector:
         boolean:
     led_invert:
       name: Invert LED
-      description: Invert LED state
+      description: Invert the LED state?
       default: false
       selector:
         boolean:
     subjects:
       name: Lights
-      description: Which lights (or fans/switches) to control with the key
+      description: Which lights (or fans/switches) to control?
       selector:
         entity:
           domain: ['fan', 'light', 'switch']
@@ -54,31 +53,31 @@ blueprint:
 mode: single
 max_exceeded: silent
 
-trigger:
-- platform: state
+triggers:
+- trigger: state
   entity_id: !input subjects
   to: 'on'
-  id: lightOn
-- platform: state
+  id: light_on
+- trigger: state
   entity_id: !input subjects
   to: 'off'
-  id: lightOff
-- platform: event
+  id: light_off
+- trigger: event
   event_type: zwave_js_value_notification
   event_data:
     device_id: !input controller
     command_class_name: Central Scene
     property_key: !input key
     value: KeyPressed
-  id: keyPressed
-- platform: event
+  id: key_pressed
+- trigger: event
   event_type: zwave_js_value_notification
   event_data:
     device_id: !input controller
     command_class_name: Central Scene
     property_key: !input key
     value: KeyPressed2x
-  id: keyPressed2x
+  id: key_pressed_twice
 
 variables:
   controller: !input controller
@@ -89,30 +88,30 @@ variables:
   led_on_value: '{{ led_invert and 2 or 3 }}'
   led_param: '{{ int(key) % 5 + 1 }}'
   subjects: !input subjects
-  fans: '{{ subjects | select("search", "^fan.") | list }}'
-  lights: '{{ subjects | select("search", "^light.") | list }}'
-  switches: '{{ subjects | select("search", "^switch.") | list }}'
+  fans: '{{ subjects | select("search", "^fan\.") | list }}'
+  lights: '{{ subjects | select("search", "^light\.") | list }}'
+  switches: '{{ subjects | select("search", "^switch\.") | list }}'
 
-action:
+actions:
 - choose:
   - conditions:
-    - '{{ trigger.id == "lightOn" }}'
+    - '{{ trigger.id == "light_on" }}'
     - '{{ led_enable }}'
     sequence:
-    - service: zwave_js.set_config_parameter
+    - action: zwave_js.set_config_parameter
       data: { parameter: '{{ led_param }}', value: '{{ led_on_value }}' }
       target: { device_id: '{{ controller }}' }
 
   - conditions:
-    - '{{ trigger.id == "lightOff" }}'
+    - '{{ trigger.id == "light_off" }}'
     - '{{ led_enable }}'
     sequence:
-    - service: zwave_js.set_config_parameter
+    - action: zwave_js.set_config_parameter
       data: { parameter: '{{ led_param }}', value: '{{ led_off_value }}' }
       target: { device_id: '{{ controller }}' }
 
   - conditions:
-    - '{{ trigger.id == "keyPressed" }}'
+    - '{{ trigger.id == "key_pressed" }}'
     - '{{ int(trigger.event.data.property_key) == int(key) }}'
     sequence:
     - if:
@@ -121,47 +120,47 @@ action:
         match: any
         state: 'off'
       then:
-      - service: fan.turn_on
+      - action: fan.turn_on
         target: { entity_id: '{{ fans }}' }
-      - service: light.turn_on
+      - action: light.turn_on
         target: { entity_id: '{{ lights }}' }
-      - service: switch.turn_on
+      - action: switch.turn_on
         target: { entity_id: '{{ switches }}' }
       - if:
         - '{{ led_enable }}'
         then:
-        - service: zwave_js.set_config_parameter
+        - action: zwave_js.set_config_parameter
           data: { parameter: '{{ led_param }}', value: '{{ led_on_value }}' }
           target: { device_id: '{{ controller }}' }
       else:
-      - service: fan.turn_off
+      - action: fan.turn_off
         target: { entity_id: '{{ fans }}' }
-      - service: light.turn_off
+      - action: light.turn_off
         target: { entity_id: '{{ lights }}' }
-      - service: switch.turn_off
+      - action: switch.turn_off
         target: { entity_id: '{{ switches }}' }
       - if:
         - '{{ led_enable }}'
         then:
-        - service: zwave_js.set_config_parameter
+        - action: zwave_js.set_config_parameter
           data: { parameter: '{{ led_param }}', value: '{{ led_off_value }}' }
           target: { device_id: '{{ controller }}' }
 
   - conditions:
-    - '{{ trigger.id == "keyPressed2x" }}'
+    - '{{ trigger.id == "key_pressed_twice" }}'
     - '{{ int(trigger.event.data.property_key) == int(key) }}'
     sequence:
-    - service: fan.turn_on
+    - action: fan.turn_on
       data: { percentage: 100 }
       target: { entity_id: '{{ fans }}' }
-    - service: light.turn_on
+    - action: light.turn_on
       data: { brightness_pct: 100 }
       target: { entity_id: '{{ lights }}' }
-    - service: switch.turn_on
+    - action: switch.turn_on
       target: { entity_id: '{{ switches }}' }
     - if:
       - '{{ led_enable }}'
       then:
-      - service: zwave_js.set_config_parameter
+      - action: zwave_js.set_config_parameter
         data: { parameter: '{{ led_param }}', value: '{{ led_on_value }}' }
         target: { device_id: '{{ controller }}' }
