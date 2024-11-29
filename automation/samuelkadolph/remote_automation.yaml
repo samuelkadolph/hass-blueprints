@@ -1,6 +1,6 @@
 blueprint:
   name: Remote Automation
-  description: Execute sets of actions when a remote turns on or off or changes.
+  description: Execute sets of actions when a remote turns on or off or the activity changes.
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/remote_automation.yaml
@@ -11,54 +11,64 @@ blueprint:
       selector:
         entity:
           domain: remote
+    on_actions:
+      name: On Actions
+      description: What actions to preform when the remote turns on?
+      default: []
+      selector: &actions-selector
+        action:
     on_conditions:
       name: On Conditions
       description: What conditions should be checked before running the on actions?
       default: []
       selector: &conditions-selector
         condition:
-    on_actions:
-      name: On Actions
-      description: What should we do when the remote turns on?
+    off_actions:
+      name: Off Actions
+      description: What actions to preform when the remote turns off?
       default: []
-      selector: &actions-selector
-        action:
+      selector: *actions-selector
     off_conditions:
       name: Off Conditions
       description: What conditions should be checked before running the off actions?
       default: []
       selector: *conditions-selector
-    off_actions:
-      name: Off Actions
-      description: What should we do when the remote turns off?
+    activity_changed_actions:
+      name: Change Actions
+      description: What actions to preform when the activity changes?
       default: []
       selector: *actions-selector
-    change_conditions:
+    activity_changed_conditions:
       name: Change Conditions
-      description: What conditions should be checked before running the on change actions?
+      description: What conditions should be checked before running the activity changed actions?
       default: []
       selector: *conditions-selector
-    change_actions:
-      name: Change Actions
-      description: What should we do when the remote changes?
-      default: []
-      selector: *actions-selector
 
-mode: single
+mode: parallel
 
 trigger:
-- platform: state
+- trigger: state
   entity_id: !input remote
+  id: on_off
+- trigger: state
+  entity_id: !input remote
+  attribute: current_activity
+  id: activity
 
 action:
-- if:
-  - '{{ trigger.from_state.state == "off" and trigger.to_state.state == "on" }}'
-  - condition: !input on_conditions
-  then: !input on_actions
-- if:
-  - '{{ trigger.from_state.state == "on" and trigger.to_state.state == "off" }}'
-  - condition: !input on_conditions
-  then: !input on_actions
-- if:
-  - condition: !input change_conditions
-  then: !input change_actions
+- choose:
+  - conditions:
+    - '{{ trigger.id == "on_off" and trigger.from_state.state == "off" and trigger.to_state.state == "on" }}'
+    - condition: !input on_conditions
+    sequence: !input on_actions
+
+  - conditions:
+    - '{{ trigger.id == "on_off" and trigger.from_state.state == "on" and trigger.to_state.state == "off" }}'
+    - condition: !input off_conditions
+    sequence: !input off_actions
+
+  - conditions:
+    - '{{ trigger.id == "activity" and trigger.from_state.state != "unavailable" and trigger.to_state.state != "unavailable" }}'
+    - '{{ trigger.from_state.attributes.current_activity != trigger.to_state.attributes.current_activity }}'
+    - condition: !input activity_changed_conditions
+    sequence: !input activity_changed_actions
