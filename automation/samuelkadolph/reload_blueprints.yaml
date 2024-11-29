@@ -30,6 +30,7 @@ action:
     - '{{ "blueprints/automation" in trigger.event.data.folder }}'
     sequence:
     - action: automation.reload
+
   - conditions:
     - '{{ "blueprints/script" in trigger.event.data.folder }}'
     sequence:
