@@ -64,7 +64,7 @@ triggers:
   id: light_off
 - trigger: event
   event_type: zwave_js_value_notification
-  event_data:
+  event_data: &event_data
     device_id: !input controller
     command_class_name: Central Scene
     property_key: !input key
@@ -73,9 +73,7 @@ triggers:
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    device_id: !input controller
-    command_class_name: Central Scene
-    property_key: !input key
+    <<: *event_data
     value: KeyPressed2x
   id: key_pressed_twice
 
@@ -84,9 +82,7 @@ variables:
   key: !input key
   led_enable: !input led_enable
   led_invert: !input led_invert
-  led_off_value: '{{ led_invert and 3 or 2 }}'
-  led_on_value: '{{ led_invert and 2 or 3 }}'
-  led_param: '{{ int(key) % 5 + 1 }}'
+  led_entity: '{{ device_entities(controller) | select("search", "button_{}_indication_binary".format(int(key) % 5 + 1)) | first }}'
   subjects: !input subjects
   fans: '{{ subjects | select("search", "^fan\.") | list }}'
   lights: '{{ subjects | select("search", "^light\.") | list }}'
@@ -96,19 +92,21 @@ actions:
 - choose:
   - conditions:
     - '{{ trigger.id == "light_on" }}'
-    - '{{ led_enable }}'
-    sequence:
-    - action: zwave_js.set_config_parameter
-      data: { parameter: '{{ led_param }}', value: '{{ led_on_value }}' }
-      target: { device_id: '{{ controller }}' }
+    sequence: &led_on
+    - if:
+      - '{{ led_enable }}'
+      then:
+      - action: '{{ led_invert and "switch.turn_off" or "switch.turn_on" }}'
+        target: { entity_id: '{{ led_entity }}' }
 
   - conditions:
     - '{{ trigger.id == "light_off" }}'
-    - '{{ led_enable }}'
-    sequence:
-    - action: zwave_js.set_config_parameter
-      data: { parameter: '{{ led_param }}', value: '{{ led_off_value }}' }
-      target: { device_id: '{{ controller }}' }
+    sequence: &led_off
+    - if:
+      - '{{ led_enable }}'
+      then:
+      - action: '{{ led_invert and "switch.turn_on" or "switch.turn_off" }}'
+        target: { entity_id: '{{ led_entity }}' }
 
   - conditions:
     - '{{ trigger.id == "key_pressed" }}'
@@ -126,12 +124,7 @@ actions:
         target: { entity_id: '{{ lights }}' }
       - action: switch.turn_on
         target: { entity_id: '{{ switches }}' }
-      - if:
-        - '{{ led_enable }}'
-        then:
-        - action: zwave_js.set_config_parameter
-          data: { parameter: '{{ led_param }}', value: '{{ led_on_value }}' }
-          target: { device_id: '{{ controller }}' }
+      - <<: *led_on
       else:
       - action: fan.turn_off
         target: { entity_id: '{{ fans }}' }
@@ -139,12 +132,7 @@ actions:
         target: { entity_id: '{{ lights }}' }
       - action: switch.turn_off
         target: { entity_id: '{{ switches }}' }
-      - if:
-        - '{{ led_enable }}'
-        then:
-        - action: zwave_js.set_config_parameter
-          data: { parameter: '{{ led_param }}', value: '{{ led_off_value }}' }
-          target: { device_id: '{{ controller }}' }
+      - <<: *led_off
 
   - conditions:
     - '{{ trigger.id == "key_pressed_twice" }}'
@@ -158,9 +146,4 @@ actions:
       target: { entity_id: '{{ lights }}' }
     - action: switch.turn_on
       target: { entity_id: '{{ switches }}' }
-    - if:
-      - '{{ led_enable }}'
-      then:
-      - action: zwave_js.set_config_parameter
-        data: { parameter: '{{ led_param }}', value: '{{ led_on_value }}' }
-        target: { device_id: '{{ controller }}' }
+    - <<: *led_on

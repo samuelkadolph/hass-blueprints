@@ -79,7 +79,7 @@ triggers:
   id: cover_closed
 - trigger: event
   event_type: zwave_js_value_notification
-  event_data:
+  event_data: &event_data
     device_id: !input controller
     command_class_name: Central Scene
     property_key: !input key
@@ -88,17 +88,13 @@ triggers:
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    device_id: !input controller
-    command_class_name: Central Scene
-    property_key: !input key
+    <<: *event_data
     value: KeyHeldDown
   id: key_held_down
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    device_id: !input controller
-    command_class_name: Central Scene
-    property_key: !input key
+    <<: *event_data
     value: KeyReleased
   id: key_released
 
@@ -107,9 +103,7 @@ variables:
   key: !input key
   led_enable: !input led_enable
   led_invert: !input led_invert
-  led_off_value: '{{ led_invert and 3 or 2 }}'
-  led_on_value: '{{ led_invert and 2 or 3 }}'
-  led_param: '{{ int(key) % 5 + 1 }}'
+  led_entity: '{{ device_entities(controller) | select("search", "button_{}_indication_binary".format(int(key) % 5 + 1)) | first }}'
   state_variable: !input state_variable
   state: '{{ int(states(state_variable)) }}'
   # 0=nothing 1=up 2=up_stopped 3=down 4=down_stopped
@@ -125,19 +119,21 @@ actions:
 
   - conditions:
     - '{{ trigger.id == "cover_opened" }}'
-    - '{{ led_enable }}'
-    sequence:
-    - action: zwave_js.set_config_parameter
-      data: { parameter: '{{ led_param }}', value: '{{ led_on_value }}' }
-      target: { device_id: '{{ controller }}' }
+    sequence: &led_on
+    - if:
+      - '{{ led_enable }}'
+      then:
+      - action: '{{ led_invert and "switch.turn_off" or "switch.turn_on" }}'
+        target: { entity_id: '{{ led_entity }}' }
 
   - conditions:
     - '{{ trigger.id == "cover_closed" }}'
-    - '{{ led_enable }}'
-    sequence:
-    - action: zwave_js.set_config_parameter
-      data: { parameter: '{{ led_param }}', value: '{{ led_off_value }}' }
-      target: { device_id: '{{ controller }}' }
+    sequence: &led_off
+    - if:
+      - '{{ led_enable }}'
+      then:
+      - action: '{{ led_invert and "switch.turn_on" or "switch.turn_off" }}'
+        target: { entity_id: '{{ led_entity }}' }
 
   - conditions:
     - '{{ trigger.id == "key_pressed" }}'
@@ -146,26 +142,28 @@ actions:
     - choose:
       - conditions:
         - '{{ state == 0 }}'
-        sequence:
+        sequence: &open_or_close_covers
         - if:
           - condition: state
             entity_id: !input covers
             state: closed
-          then:
+          then: &open_covers
           - action: cover.open_cover
             target: { entity_id: !input covers }
           - action: input_number.set_value
             data: { value: 1 }
             target: { entity_id: !input state_variable }
-          else:
+          - <<: *led_on
+          else: &close_covers
           - action: cover.close_cover
             target: { entity_id: !input covers }
           - action: input_number.set_value
             data: { value: 3 }
             target: { entity_id: !input state_variable }
+          - <<: *led_off
       - conditions:
         - '{{ state == 1 }}'
-        sequence:
+        sequence: &stop_opening
         - action: cover.stop_cover
           target: { entity_id: !input covers }
         - action: input_number.set_value
@@ -173,15 +171,10 @@ actions:
           target: { entity_id: !input state_variable }
       - conditions:
         - '{{ state == 2 }}'
-        sequence:
-        - action: cover.close_cover
-          target: { entity_id: !input covers }
-        - action: input_number.set_value
-          data: { value: 3 }
-          target: { entity_id: !input state_variable }
+        sequence: *close_covers
       - conditions:
         - '{{ state == 3 }}'
-        sequence:
+        sequence: &stop_closing
         - action: cover.stop_cover
           target: { entity_id: !input covers }
         - action: input_number.set_value
@@ -189,12 +182,7 @@ actions:
           target: { entity_id: !input state_variable }
       - conditions:
         - '{{ state == 4 }}'
-        sequence:
-        - action: cover.open_cover
-          target: { entity_id: !input covers }
-        - action: input_number.set_value
-          data: { value: 1 }
-          target: { entity_id: !input state_variable }
+        sequence: *open_covers
 
   - conditions:
     - '{{ trigger.id == "key_held_down" }}'
@@ -203,39 +191,13 @@ actions:
     - choose:
       - conditions:
         - '{{ state == 0 }}'
-        sequence:
-        - if:
-          - condition: state
-            entity_id: !input covers
-            state: closed
-          then:
-          - action: cover.open_cover
-            target: { entity_id: !input covers }
-          - action: input_number.set_value
-            data: { value: 1 }
-            target: { entity_id: !input state_variable }
-          else:
-          - action: cover.close_cover
-            target: { entity_id: !input covers }
-          - action: input_number.set_value
-            data: { value: 3 }
-            target: { entity_id: !input state_variable }
+        sequence: *open_or_close_covers
       - conditions:
-        - '{{ state == 2 }}'
-        sequence:
-        - action: cover.close_cover
-          target: { entity_id: !input covers }
-        - action: input_number.set_value
-          data: { value: 3 }
-          target: { entity_id: !input state_variable }
+        - '{{ state in [1, 2] }}'
+        sequence: *close_covers
       - conditions:
-        - '{{ state == 4 }}'
-        sequence:
-        - action: cover.open_cover
-          target: { entity_id: !input covers }
-        - action: input_number.set_value
-          data: { value: 1 }
-          target: { entity_id: !input state_variable }
+        - '{{ state in [3, 4] }}'
+        sequence: *open_covers
 
   - conditions:
     - '{{ trigger.id == "key_released" }}'
@@ -244,17 +206,7 @@ actions:
     - choose:
       - conditions:
         - '{{ state == 1 }}'
-        sequence:
-        - action: cover.stop_cover
-          target: { entity_id: !input covers }
-        - action: input_number.set_value
-          data: { value: 2 }
-          target: { entity_id: !input state_variable }
+        sequence: *stop_opening
       - conditions:
         - '{{ state == 3 }}'
-        sequence:
-        - action: cover.stop_cover
-          target: { entity_id: !input covers }
-        - action: input_number.set_value
-          data: { value: 4 }
-          target: { entity_id: !input state_variable }
+        sequence: *stop_closing
