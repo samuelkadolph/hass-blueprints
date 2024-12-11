@@ -69,7 +69,7 @@ triggers:
   id: reset
 - trigger: event
   event_type: zwave_js_value_notification
-  event_data:
+  event_data: &event_data_top
     device_id: !input switch
     command_class_name: Central Scene
     property_key: '001'
@@ -78,41 +78,32 @@ triggers:
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    device_id: !input switch
-    command_class_name: Central Scene
-    property_key: '001'
+    <<: *event_data_top
     value: 'KeyHeldDown'
   id: up_held_down
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    device_id: !input switch
-    command_class_name: Central Scene
-    property_key: '001'
+    <<: *event_data_top
     value: 'KeyReleased'
   id: up_released
 - trigger: event
   event_type: zwave_js_value_notification
-  event_data:
-    device_id: !input switch
-    command_class_name: Central Scene
+  event_data: &event_data_bottom
+    <<: *event_data_top
     property_key: '002'
     value: '{{ paddle_taps }}'
   id: down_pressed
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    device_id: !input switch
-    command_class_name: Central Scene
-    property_key: '002'
+    <<: *event_data_bottom
     value: 'KeyHeldDown'
   id: down_held_down
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    device_id: !input switch
-    command_class_name: Central Scene
-    property_key: '002'
+    <<: *event_data_bottom
     value: 'KeyReleased'
   id: down_released
 
@@ -137,7 +128,7 @@ actions:
     - choose:
       - conditions:
         - '{{ state in [0, 2, 4] }}'
-        sequence:
+        sequence: &open_covers
         - action: cover.open_cover
           target: { entity_id: !input covers }
         - action: input_number.set_value
@@ -145,7 +136,7 @@ actions:
           target: { entity_id: !input state_variable }
       - conditions:
         - '{{ state == 3 }}'
-        sequence:
+        sequence: &stop_closing
         - action: cover.stop_cover
           target: { entity_id: !input covers }
         - action: input_number.set_value
@@ -156,18 +147,13 @@ actions:
     - '{{ trigger.id == "up_held_down" }}'
     - '{{ paddle_hold }}'
     - '{{ state in [0, 2, 3, 4] }}'
-    sequence:
-    - action: cover.open_cover
-      target: { entity_id: !input covers }
-    - action: input_number.set_value
-      data: { value: 1 }
-      target: { entity_id: !input state_variable }
+    sequence: *open_covers
 
   - conditions:
     - '{{ trigger.id == "up_released" }}'
     - '{{ paddle_hold }}'
     - '{{ state == 1 }}'
-    sequence:
+    sequence: &stop_opening
     - action: cover.stop_cover
       target: { entity_id: !input covers }
     - action: input_number.set_value
@@ -180,7 +166,7 @@ actions:
     - choose:
       - conditions:
         - '{{ state in [0, 2, 4] }}'
-        sequence:
+        sequence: &close_covers
         - action: cover.close_cover
           target: { entity_id: !input covers }
         - action: input_number.set_value
@@ -188,31 +174,16 @@ actions:
           target: { entity_id: !input state_variable }
       - conditions:
         - '{{ state == 1 }}'
-        sequence:
-        - action: cover.stop_cover
-          target: { entity_id: !input covers }
-        - action: input_number.set_value
-          data: { value: 2 }
-          target: { entity_id: !input state_variable }
+        sequence: *stop_opening
 
   - conditions:
     - '{{ trigger.id == "down_held_down" }}'
     - '{{ paddle_hold }}'
     - '{{ state in [0, 1, 2, 4] }}'
-    sequence:
-    - action: cover.close_cover
-      target: { entity_id: !input covers }
-    - action: input_number.set_value
-      data: { value: 3 }
-      target: { entity_id: !input state_variable }
+    sequence: *close_covers
 
   - conditions:
     - '{{ trigger.id == "down_released" }}'
     - '{{ paddle_hold }}'
     - '{{ state == 3 }}'
-    sequence:
-    - action: cover.stop_cover
-      target: { entity_id: !input covers }
-    - action: input_number.set_value
-      data: { value: 4 }
-      target: { entity_id: !input state_variable }
+    sequence: *stop_closing

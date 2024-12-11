@@ -48,7 +48,7 @@ trigger_variables:
 triggers:
 - trigger: event
   event_type: zwave_js_value_notification
-  event_data:
+  event_data: &event_data
     device_id: !input switch
     command_class_name: Central Scene
     property_key: '001'
@@ -57,10 +57,8 @@ triggers:
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    device_id: !input switch
-    command_class_name: Central Scene
+    <<: *event_data
     property_key: '002'
-    value: '{{ paddle_taps }}'
   id: down_pressed
 
 variables:

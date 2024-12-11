@@ -37,11 +37,22 @@ blueprint:
       default: []
       selector: &actions-selector
         action:
+    up_conditions:
+      name: Up Conditions
+      description: What conditions should be checked before running the up actions?
+      default: []
+      selector: &conditions-selector
+        condition:
     down_actions:
       name: Down Actions
       description: What should we do when the down paddle is tapped?
       default: []
       selector: *actions-selector
+    down_conditions:
+      name: Down Conditions
+      description: What conditions should be checked before running the down actions?
+      default: []
+      selector: *conditions-selector
 
 mode: single
 max_exceeded: silent
@@ -52,7 +63,7 @@ trigger_variables:
 triggers:
 - trigger: event
   event_type: zwave_js_value_notification
-  event_data:
+  event_data: &event_data
     device_id: !input switch
     command_class_name: Central Scene
     property_key: '001'
@@ -61,18 +72,18 @@ triggers:
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    device_id: !input switch
-    command_class_name: Central Scene
+    <<: *event_data
     property_key: '002'
-    value: '{{ paddle_taps }}'
   id: down_pressed
 
 actions:
 - choose:
   - conditions:
     - '{{ trigger.id == "up_pressed" }}'
+    - condition: !input up_conditions
     sequence: !input up_actions
 
   - conditions:
     - '{{ trigger.id == "down_pressed" }}'
+    - condition: !input down_conditions
     sequence: !input down_actions
