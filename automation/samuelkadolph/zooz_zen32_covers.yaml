@@ -79,10 +79,11 @@ triggers:
   id: cover_closed
 - trigger: event
   event_type: zwave_js_value_notification
-  event_data: &event_data
-    device_id: !input controller
-    command_class_name: Central Scene
-    property_key: !input key
+  event_data:
+    <<: &event_data
+      device_id: !input controller
+      command_class_name: Central Scene
+      property_key: !input key
     value: KeyPressed
   id: key_pressed
 - trigger: event

@@ -69,41 +69,46 @@ triggers:
   id: reset
 - trigger: event
   event_type: zwave_js_value_notification
-  event_data: &event_data_top
-    device_id: !input switch
-    command_class_name: Central Scene
+  event_data:
+    <<: &event_data
+      device_id: !input switch
+      command_class_name: Central Scene
     property_key: '001'
     value: '{{ paddle_taps }}'
   id: up_pressed
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    <<: *event_data_top
+    <<: *event_data
+    property_key: '001'
     value: 'KeyHeldDown'
   id: up_held_down
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    <<: *event_data_top
+    <<: *event_data
+    property_key: '001'
     value: 'KeyReleased'
   id: up_released
 - trigger: event
   event_type: zwave_js_value_notification
-  event_data: &event_data_bottom
-    <<: *event_data_top
+  event_data:
+    <<: *event_data
     property_key: '002'
     value: '{{ paddle_taps }}'
   id: down_pressed
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    <<: *event_data_bottom
+    <<: *event_data
+    property_key: '002'
     value: 'KeyHeldDown'
   id: down_held_down
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    <<: *event_data_bottom
+    <<: *event_data
+    property_key: '002'
     value: 'KeyReleased'
   id: down_released
 
