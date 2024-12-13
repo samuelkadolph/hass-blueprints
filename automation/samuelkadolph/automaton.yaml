@@ -154,13 +154,13 @@ trigger_variables:
 
 triggers:
 - trigger: template
-  value_template: '{{ first_trigger == "elevation_above" and first_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(first_elevation_helper) | float) }}'
+  value_template: '{{ first_trigger == "elevation_above" and first_elevation_helper != None and state_attr("sun.sun", "elevation") > float(states(first_elevation_helper)) }}'
   id: first_elevation
 - trigger: template
   value_template: '{{ first_trigger == "elevation_above" and first_elevation_helper == None and state_attr("sun.sun", "elevation") > first_elevation_manual }}'
   id: first_elevation
 - trigger: template
-  value_template: '{{ first_trigger == "elevation_below" and first_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(first_elevation_helper) | float) }}'
+  value_template: '{{ first_trigger == "elevation_below" and first_elevation_helper != None and state_attr("sun.sun", "elevation") < float(states(first_elevation_helper)) }}'
   id: first_elevation
 - trigger: template
   value_template: '{{ first_trigger == "elevation_below" and first_elevation_helper == None and state_attr("sun.sun", "elevation") < first_elevation_manual }}'
@@ -173,13 +173,13 @@ triggers:
   id: first_time_manual
 
 - trigger: template
-  value_template: '{{ second_trigger == "elevation_above" and second_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(second_elevation_helper) | float) }}'
+  value_template: '{{ second_trigger == "elevation_above" and second_elevation_helper != None and state_attr("sun.sun", "elevation") > float(states(second_elevation_helper)) }}'
   id: second_elevation
 - trigger: template
   value_template: '{{ second_trigger == "elevation_above" and second_elevation_helper == None and state_attr("sun.sun", "elevation") > second_elevation_manual }}'
   id: second_elevation
 - trigger: template
-  value_template: '{{ second_trigger == "elevation_below" and second_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(second_elevation_helper) | float) }}'
+  value_template: '{{ second_trigger == "elevation_below" and second_elevation_helper != None and state_attr("sun.sun", "elevation") < float(states(second_elevation_helper)) }}'
   id: second_elevation
 - trigger: template
   value_template: '{{ second_trigger == "elevation_below" and second_elevation_helper == None and state_attr("sun.sun", "elevation") < second_elevation_manual }}'
@@ -192,13 +192,13 @@ triggers:
   id: second_time_manual
 
 - trigger: template
-  value_template: '{{ third_trigger == "elevation_above" and third_elevation_helper != None and state_attr("sun.sun", "elevation") > states(third_elevation_helper) | float }}'
+  value_template: '{{ third_trigger == "elevation_above" and third_elevation_helper != None and state_attr("sun.sun", "elevation") > float(states(third_elevation_helper)) }}'
   id: third_elevation
 - trigger: template
   value_template: '{{ third_trigger == "elevation_above" and third_elevation_helper == None and state_attr("sun.sun", "elevation") > third_elevation_manual }}'
   id: third_elevation
 - trigger: template
-  value_template: '{{ third_trigger == "elevation_below" and third_elevation_helper != None and state_attr("sun.sun", "elevation") < states(third_elevation_helper) | float }}'
+  value_template: '{{ third_trigger == "elevation_below" and third_elevation_helper != None and state_attr("sun.sun", "elevation") < float(states(third_elevation_helper)) }}'
   id: third_elevation
 - trigger: template
   value_template: '{{ third_trigger == "elevation_below" and third_elevation_helper == None and state_attr("sun.sun", "elevation") < third_elevation_manual }}'

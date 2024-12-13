@@ -128,7 +128,7 @@ trigger_variables:
 
 triggers:
 - trigger: template
-  value_template: '{{ on_trigger == "elevation" and on_elevation_helper != None and state_attr("sun.sun", "elevation") < (states(on_elevation_helper) | float) }}'
+  value_template: '{{ on_trigger == "elevation" and on_elevation_helper != None and state_attr("sun.sun", "elevation") < float(states(on_elevation_helper)) }}'
   id: on_elevation
 - trigger: template
   value_template: '{{ on_trigger == "elevation" and on_elevation_helper == None and state_attr("sun.sun", "elevation") < on_elevation_manual }}'
@@ -141,7 +141,7 @@ triggers:
   id: on_time_manual
 
 - trigger: template
-  value_template: '{{ off_trigger == "elevation" and off_elevation_helper != None and state_attr("sun.sun", "elevation") > (states(off_elevation_helper) | float) }}'
+  value_template: '{{ off_trigger == "elevation" and off_elevation_helper != None and state_attr("sun.sun", "elevation") > float(states(off_elevation_helper)) }}'
   id: off_elevation
 - trigger: template
   value_template: '{{ off_trigger == "elevation" and off_elevation_helper == None and state_attr("sun.sun", "elevation") > off_elevation_manual }}'
@@ -166,7 +166,7 @@ variables:
 conditions:
 - condition: state
   entity_id: !input zone
-  state: "0"
+  state: '0'
 
 actions:
 - choose:
