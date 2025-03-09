@@ -85,9 +85,10 @@ variables:
   led_invert: !input led_invert
   led_entity: '{{ device_entities(controller) | select("search", "button_{}_indication_binary".format(int(key) % 5 + 1)) | first }}'
   subjects: !input subjects
-  fans: '{{ subjects | select("search", "^fan\.") | list }}'
-  lights: '{{ subjects | select("search", "^light\.") | list }}'
-  switches: '{{ subjects | select("search", "^switch\.") | list }}'
+  subjects_list: '{{ subjects is list and subjects or [subjects] }}'
+  fans: '{{ subjects_list | select("search", "^fan\.") | list }}'
+  lights: '{{ subjects_list | select("search", "^light\.") | list }}'
+  switches: '{{ subjects_list | select("search", "^switch\.") | list }}'
 
 actions:
 - choose:

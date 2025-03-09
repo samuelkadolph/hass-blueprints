@@ -64,9 +64,10 @@ triggers:
 
 variables:
   subjects: !input subjects
-  fans: '{{ subjects | select("search", "^fan\.") | list }}'
-  lights: '{{ subjects | select("search", "^light\.") | list }}'
-  switches: '{{ subjects | select("search", "^switch\.") | list }}'
+  subjects_list: '{{ subjects is list and subjects or [subjects] }}'
+  fans: '{{ subjects_list | select("search", "^fan\.") | list }}'
+  lights: '{{ subjects_list | select("search", "^light\.") | list }}'
+  switches: '{{ subjects_list | select("search", "^switch\.") | list }}'
 
 actions:
 - choose:
