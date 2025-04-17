@@ -35,9 +35,9 @@ blueprint:
         number:
           max: 5.0
           min: -18.0
+          mode: slider
           step: 0.5
           unit_of_measurement: °
-          mode: slider
     on_time_helper:
       name: On Time Helper
       description: Use a helper or leave empty to specify the time below.
@@ -54,10 +54,16 @@ blueprint:
       default:
       selector: &time-manual-selector
         time:
-    on_delay:
-      name: On Delay
-      description: How long to delay turning on the lights? A random time between zero and this will be picked.
+    on_delay_max:
+      name: On Delay Max
+      description: How long to delay turning on the lights? Upper bound to the random delay.
       default: { minutes: 30 }
+      selector: &delay-selector
+        duration:
+    on_delay_min:
+      name: On Delay Min
+      description: How long to delay turning on the lights? Lower bound to the random delay.
+      default: { minutes: 5 }
       selector: &delay-selector
         duration:
     on_conditions:
@@ -91,10 +97,15 @@ blueprint:
       description: What time of day should the lights turn off?
       default:
       selector: *time-manual-selector
-    off_delay:
-      name: Off Delay
-      description: How long to delay turning off the lights? A random time between zero and this will be picked.
+    off_delay_max:
+      name: Off Delay Max
+      description: How long to delay turning off the lights? Upper bound to the random delay.
       default: { minutes: 30 }
+      selector: *delay-selector
+    off_delay_min:
+      name: Off Delay Min
+      description: How long to delay turning off the lights? Lower bound to the random delay.
+      default: { minutes: 5 }
       selector: *delay-selector
     off_conditions:
       name: Off Conditions
@@ -117,6 +128,7 @@ blueprint:
           domain: zone
 
 mode: single
+max_exceeded: silent
 
 trigger_variables:
   off_elevation_helper: !input off_elevation_helper
@@ -153,20 +165,22 @@ triggers:
   at: !input off_time_manual
   id: off_time_manual
 
+- trigger: state
+  entity_id: !input zone
+  from: '0'
+  id: "person_arrived"
+
 variables:
-  off_delay: !input off_delay
-  off_delay_rand: '{{ range(0, off_delay.get("hours", 0) * 3600 + off_delay.get("minutes", 0) * 60 + off_delay.get("seconds", 0)) | random }}'
+  off_delay_max: !input off_delay_max
+  off_delay_min: !input off_delay_min
+  off_delay_rand: '{{ range(off_delay_min.get("hours", 0) * 3600 + off_delay_min.get("minutes", 0) * 60 + off_delay_min.get("seconds", 0), off_delay_max.get("hours", 0) * 3600 + off_delay_max.get("minutes", 0) * 60 + off_delay_max.get("seconds", 0)) | random }}'
   off_time_helper: !input off_time_helper
   off_trigger: !input off_trigger
-  on_delay: !input on_delay
-  on_delay_rand: '{{ range(0, on_delay.get("hours", 0) * 3600 + on_delay.get("minutes", 0) * 60 + on_delay.get("seconds", 0)) | random }}'
+  on_delay_max: !input on_delay_max
+  on_delay_min: !input on_delay_min
+  on_delay_rand: '{{ range(on_delay_min.get("hours", 0) * 3600 + on_delay_min.get("minutes", 0) * 60 + on_delay_min.get("seconds", 0), on_delay_max.get("hours", 0) * 3600 + on_delay_max.get("minutes", 0) * 60 + on_delay_max.get("seconds", 0)) | random }}'
   on_time_helper: !input on_time_helper
   on_trigger: !input on_trigger
-
-conditions:
-- condition: state
-  entity_id: !input zone
-  state: '0'
 
 actions:
 - choose:
@@ -176,6 +190,9 @@ actions:
       - '{{ trigger.id == "on_elevation" }}'
       - '{{ trigger.id == "on_time_helper" and on_trigger == "time" and on_time_helper != None }}'
       - '{{ trigger.id == "on_time_manual" and on_trigger == "time" and on_time_helper == None }}'
+    - condition: state
+      entity_id: !input zone
+      state: '0'
     - condition: !input on_conditions
     sequence:
     - delay: { seconds: '{{ on_delay_rand }}' }
@@ -188,8 +205,15 @@ actions:
       - '{{ trigger.id == "off_elevation" }}'
       - '{{ trigger.id == "off_time_helper" and off_trigger == "time" and off_time_helper != None }}'
       - '{{ trigger.id == "off_time_manual" and off_trigger == "time" and off_time_helper == None }}'
+    - condition: state
+      entity_id: !input zone
+      state: '0'
     - condition: !input off_conditions
     sequence:
     - delay: { seconds: '{{ off_delay_rand }}' }
     - action: light.turn_off
       target: { entity_id: !input lights }
+
+  - conditions:
+    - '{{ trigger.id == "person_arrived" }}'
+    sequence: []
