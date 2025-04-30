@@ -64,8 +64,7 @@ blueprint:
       name: On Delay Min
       description: How long to delay turning on the lights? Lower bound to the random delay.
       default: { minutes: 5 }
-      selector: &delay-selector
-        duration:
+      selector: *delay-selector
     on_conditions:
       name: On Conditions
       description: What other conditions should be checked before turning on the lights?
@@ -127,8 +126,7 @@ blueprint:
         entity:
           domain: zone
 
-mode: single
-max_exceeded: silent
+mode: restart
 
 trigger_variables:
   off_elevation_helper: !input off_elevation_helper
