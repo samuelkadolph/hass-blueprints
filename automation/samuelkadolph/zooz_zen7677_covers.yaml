@@ -33,8 +33,8 @@ blueprint:
             value: 'KeyPressed5x'
     paddle_hold:
       name: Paddle Hold
-      description: Open and close the covers when holding down a paddle?
-      default: true
+      description: Open or close the covers when holding down a paddle?
+      default: false
       selector:
         boolean:
     state_variable:
