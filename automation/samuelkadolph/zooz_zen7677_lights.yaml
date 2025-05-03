@@ -31,6 +31,47 @@ blueprint:
             value: 'KeyPressed4x'
           - label: 'Quintuple'
             value: 'KeyPressed5x'
+    double_tap:
+      name: Double Tap
+      description: Instantly change brightness with paddle double tap?
+      default: false
+      selector:
+        boolean:
+    double_tap_up_brightness:
+      name: Double Tap Up Brightness
+      description: What brightness to use when double tapping the up paddle?
+      default: 100
+      selector: &brightness-selector
+        number:
+          max: 100
+          min: 0
+          unit_of_measurement: "%"
+    double_tap_down_brightness:
+      name: Double Tap Down Brightness
+      description: What brightness to use when double tapping the down paddle?
+      default: 30
+      selector: *brightness-selector
+    paddle_hold:
+      name: Paddle Hold
+      description: Brighten or dim the lights when holding down a paddle?
+      default: false
+      selector:
+        boolean:
+    paddle_hold_step_brightness:
+      name: Paddle Hold Step Brightness
+      description: How much to increase or decrease brightness per paddle hold step?
+      default: 10
+      selector: *brightness-selector
+    paddle_hold_step_interval:
+      name: Paddle Hold Step Interval
+      description: How long between paddle hold steps?
+      default: 600
+      selector:
+        number:
+          max: 2000
+          min: 200
+          step: 10
+          unit_of_measurement: "ms"
     subjects:
       name: Lights
       description: Which lights (or fans/switches) to control with the paddles?
@@ -39,8 +80,7 @@ blueprint:
           domain: ['fan', 'light', 'switch']
           multiple: true
 
-mode: single
-max_exceeded: silent
+mode: restart
 
 trigger_variables:
   paddle_taps: !input paddle_taps
@@ -52,21 +92,71 @@ triggers:
     <<: &event_data
       device_id: !input switch
       command_class_name: Central Scene
-      value: '{{ paddle_taps }}'
     property_key: '001'
+    value: '{{ paddle_taps }}'
   id: up_pressed
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
     <<: *event_data
+    property_key: '001'
+    value: 'KeyPressed2x'
+  id: up_pressed_twice
+- trigger: event
+  event_type: zwave_js_value_notification
+  event_data:
+    <<: *event_data
+    property_key: '001'
+    value: 'KeyHeldDown'
+  id: up_held_down
+- trigger: event
+  event_type: zwave_js_value_notification
+  event_data:
+    <<: *event_data
+    property_key: '001'
+    value: 'KeyReleased'
+  id: up_released
+- trigger: event
+  event_type: zwave_js_value_notification
+  event_data:
+    <<: *event_data
     property_key: '002'
+    value: '{{ paddle_taps }}'
   id: down_pressed
+- trigger: event
+  event_type: zwave_js_value_notification
+  event_data:
+    <<: *event_data
+    property_key: '002'
+    value: 'KeyPressed2x'
+  id: down_pressed_twice
+- trigger: event
+  event_type: zwave_js_value_notification
+  event_data:
+    <<: *event_data
+    property_key: '002'
+    value: 'KeyHeldDown'
+  id: down_held_down
+- trigger: event
+  event_type: zwave_js_value_notification
+  event_data:
+    <<: *event_data
+    property_key: '002'
+    value: 'KeyReleased'
+  id: down_released
 
 variables:
+  double_tap: !input double_tap
+  double_tap_up_brightness: !input double_tap_up_brightness
+  double_tap_down_brightness: !input double_tap_down_brightness
+  paddle_hold: !input paddle_hold
+  paddle_hold_step_brightness: !input paddle_hold_step_brightness
+  paddle_hold_step_interval: !input paddle_hold_step_interval
   subjects: !input subjects
   subjects_list: '{{ subjects is list and subjects or [subjects] }}'
   fans: '{{ subjects_list | select("search", "^fan\.") | list }}'
   lights: '{{ subjects_list | select("search", "^light\.") | list }}'
+  first_light: '{{ lights | first }}'
   switches: '{{ subjects_list | select("search", "^switch\.") | list }}'
 
 actions:
@@ -82,6 +172,31 @@ actions:
       target: { entity_id: '{{ switches }}' }
 
   - conditions:
+    - '{{ trigger.id == "up_pressed_twice" }}'
+    - '{{ double_tap }}'
+    sequence:
+      action: light.turn_on
+      target: { entity_id: '{{ lights }}' }
+      data: { brightness_pct: '{{ double_tap_up_brightness }}' }
+
+  - conditions:
+    - '{{ trigger.id == "up_held_down" }}'
+    - '{{ paddle_hold }}'
+    sequence:
+    - repeat:
+        sequence:
+        - action: light.turn_on
+          target: { entity_id: '{{ lights }}' }
+          data: { brightness_step_pct: '{{ paddle_hold_step_brightness }}' }
+        - delay: { milliseconds: '{{ paddle_hold_step_interval }}' }
+        until: '{{ state_attr(first_light, "brightness") | default(0, true) >= 255 }}'
+
+  - conditions:
+    - '{{ trigger.id == "up_released" }}'
+    - '{{ paddle_hold }}'
+    sequence: []
+
+  - conditions:
     - '{{ trigger.id == "down_pressed" }}'
     sequence:
     - action: fan.turn_off
@@ -90,3 +205,28 @@ actions:
       target: { entity_id: '{{ lights }}' }
     - action: switch.turn_off
       target: { entity_id: '{{ switches }}' }
+
+  - conditions:
+    - '{{ trigger.id == "down_pressed_twice" }}'
+    - '{{ double_tap }}'
+    sequence:
+      action: light.turn_on
+      target: { entity_id: '{{ lights }}' }
+      data: { brightness_pct: '{{ double_tap_down_brightness }}' }
+
+  - conditions:
+    - '{{ trigger.id == "down_held_down" }}'
+    - '{{ paddle_hold }}'
+    sequence:
+    - repeat:
+        sequence:
+        - action: light.turn_on
+          target: { entity_id: '{{ lights }}' }
+          data: { brightness_step_pct: '{{ -paddle_hold_step_brightness }}' }
+        - delay: { milliseconds: '{{ paddle_hold_step_interval }}' }
+        until: '{{ state_attr(first_light, "brightness") | default(0, true) <= 0 }}'
+
+  - conditions:
+    - '{{ trigger.id == "down_released" }}'
+    - '{{ paddle_hold }}'
+    sequence: []
