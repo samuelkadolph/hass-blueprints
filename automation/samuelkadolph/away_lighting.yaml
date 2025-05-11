@@ -13,12 +13,12 @@ blueprint:
         select:
           mode: dropdown
           options:
-          - label: "Sun Elevation"
-            value: "elevation"
-          - label: "Time"
-            value: "time"
-          - label: "None"
-            value: "none"
+          - label: Sun Elevation
+            value: elevation
+          - label: Time
+            value: time
+          - label: None
+            value: none
     on_elevation_helper:
       name: On Sun Elevation Helper
       description: Use a helper or leave empty to specify the elevation below.
@@ -163,10 +163,10 @@ triggers:
   at: !input off_time_manual
   id: off_time_manual
 
-- trigger: state
+- trigger: numeric_state
   entity_id: !input zone
-  from: '0'
-  id: "person_arrived"
+  above: 0
+  id: person_arrived
 
 variables:
   off_delay_max: !input off_delay_max
