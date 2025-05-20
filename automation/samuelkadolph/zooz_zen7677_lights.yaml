@@ -45,7 +45,7 @@ blueprint:
         number:
           max: 100
           min: 0
-          unit_of_measurement: "%"
+          unit_of_measurement: '%'
     double_tap_down_brightness:
       name: Double Tap Down Brightness
       description: What brightness to use when double tapping the down paddle?
@@ -71,7 +71,7 @@ blueprint:
           max: 2000
           min: 200
           step: 10
-          unit_of_measurement: "ms"
+          unit_of_measurement: ms
     subjects:
       name: Lights
       description: Which lights (or fans/switches) to control with the paddles?

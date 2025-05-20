@@ -13,14 +13,14 @@ blueprint:
         select:
           mode: dropdown
           options:
-          - label: "Sun Elevation Above"
-            value: "elevation_above"
-          - label: "Sun Elevation Below"
-            value: "elevation_below"
-          - label: "Time"
-            value: "time"
-          - label: "None"
-            value: "none"
+          - label: Sun Elevation Above
+            value: elevation_above
+          - label: Sun Elevation Below
+            value: elevation_below
+          - label: Time
+            value: time
+          - label: None
+            value: none
     first_elevation_helper:
       name: First Sun Elevation Helper
       description: Use a helper or leave empty to specify the elevation below.
