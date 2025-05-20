@@ -90,6 +90,12 @@ triggers:
   event_type: zwave_js_value_notification
   event_data:
     <<: *event_data
+    value: KeyPressed2x
+  id: key_pressed_twice
+- trigger: event
+  event_type: zwave_js_value_notification
+  event_data:
+    <<: *event_data
     value: KeyHeldDown
   id: key_held_down
 - trigger: event
@@ -137,7 +143,7 @@ actions:
         target: { entity_id: '{{ led_entity }}' }
 
   - conditions:
-    - '{{ trigger.id == "key_pressed" }}'
+    - '{{ trigger.id == "key_pressed" or trigger.id == "key_pressed_twice" }}'
     - '{{ int(trigger.event.data.property_key) == int(key) }}'
     sequence:
     - choose:
@@ -147,7 +153,7 @@ actions:
         - if:
           - condition: state
             entity_id: !input covers
-            state: closed
+            state: '{{ trigger.id == "key_pressed_twice" and "open" or "closed" }}'
           then: &open_covers
           - action: cover.open_cover
             target: { entity_id: !input covers }
