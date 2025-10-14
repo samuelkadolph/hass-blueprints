@@ -83,7 +83,9 @@ variables:
   key: !input key
   led_enable: !input led_enable
   led_invert: !input led_invert
-  led_entity: '{{ device_entities(controller) | select("search", "button_{}_indication_binary".format(int(key) % 5 + 1)) | first }}'
+  led_off_value: '{{ led_invert and 3 or 2 }}'
+  led_on_value: '{{ led_invert and 2 or 3 }}'
+  led_param: '{{ int(key) % 5 + 1 }}'
   subjects: !input subjects
   subjects_list: '{{ subjects is list and subjects or [subjects] }}'
   fans: '{{ subjects_list | select("search", "^fan\.") | list }}'
@@ -98,8 +100,9 @@ actions:
     - if:
       - '{{ led_enable }}'
       then:
-      - action: '{{ led_invert and "switch.turn_off" or "switch.turn_on" }}'
-        target: { entity_id: '{{ led_entity }}' }
+      - action: zwave_js.set_config_parameter
+        data: { parameter: '{{ led_param }}', value: '{{ led_on_value }}' }
+        target: { device_id: '{{ controller }}' }
 
   - conditions:
     - '{{ trigger.id == "light_off" }}'
@@ -107,8 +110,9 @@ actions:
     - if:
       - '{{ led_enable }}'
       then:
-      - action: '{{ led_invert and "switch.turn_on" or "switch.turn_off" }}'
-        target: { entity_id: '{{ led_entity }}' }
+      - action: zwave_js.set_config_parameter
+        data: { parameter: '{{ led_param }}', value: '{{ led_off_value }}' }
+        target: { device_id: '{{ controller }}' }
 
   - conditions:
     - '{{ trigger.id == "key_pressed" }}'
