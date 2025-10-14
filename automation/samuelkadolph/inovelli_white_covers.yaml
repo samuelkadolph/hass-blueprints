@@ -1,0 +1,163 @@
+blueprint:
+  name: Inovelli White Covers
+  description: Control covers with an Inovelli White wall switch.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/inovelli_white_covers.yaml
+  input:
+    up_event:
+      name: Up Event
+      description: Which event to use for up taps?
+      selector: &event-selector
+        entity:
+          filter:
+          - domain: event
+            device_class: button
+            integration: matter
+          multiple: true
+    down_event:
+      name: Down Event
+      description: Which event to use for down taps?
+      selector: *event-selector
+    paddle_taps:
+      name: Paddle Taps
+      description: How many taps on a paddle are required?
+      default: 'KeyPressed'
+      selector:
+        select:
+          mode: dropdown
+          options:
+          - label: 'Single'
+            value: 'multi_press_1'
+          - label: 'Double'
+            value: 'multi_press_2'
+          - label: 'Triple'
+            value: 'multi_press_3'
+          - label: 'Quadruple'
+            value: 'multi_press_4'
+          - label: 'Quintuple'
+            value: 'multi_press_5'
+    paddle_hold:
+      name: Paddle Hold
+      description: Open or close the covers when holding down a paddle?
+      default: false
+      selector:
+        boolean:
+    state_variable:
+      name: State Variable
+      description: |
+        This automation requires a Number helper to store the current state of the shade.
+        Please create one that goes from 0 to 4 and select it here.
+        Must only be shared with automations using the same set of shades.
+      selector:
+        entity:
+          domain: input_number
+    covers:
+      name: Covers
+      description: Which covers to control with the switch paddles?
+      selector:
+        entity:
+          domain: cover
+          multiple: true
+
+mode: single
+max_exceeded: silent
+
+triggers:
+- trigger: state
+  attribute: current_position
+  entity_id: !input covers
+  to: [0, 100]
+  for: { seconds: 30 }
+  id: reset
+- trigger: state
+  entity_id: !input down_event
+  not_from: unavailable
+  id: down_event
+- trigger: state
+  entity_id: !input up_event
+  not_from: unavailable
+  id: up_event
+
+variables:
+  event: '{{ trigger.to_state.attributes.event_type }}'
+  paddle_hold: !input paddle_hold
+  paddle_taps: !input paddle_taps
+  state_variable: !input state_variable
+  state: '{{ int(states(state_variable)) }}'
+  # 0=nothing 1=up 2=up_stopped 3=down 4=down_stopped
+
+actions:
+- choose:
+  - conditions:
+    - '{{ trigger.id == "reset" }}'
+    sequence:
+    - action: input_number.set_value
+      data: { value: 0 }
+      target: { entity_id: !input state_variable }
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event == paddle_taps }}'
+    sequence:
+    - choose:
+      - conditions:
+        - '{{ state in [0, 2, 4] }}'
+        sequence: &open_covers
+        - action: cover.open_cover
+          target: { entity_id: !input covers }
+        - action: input_number.set_value
+          data: { value: 1 }
+          target: { entity_id: !input state_variable }
+      - conditions:
+        - '{{ state == 3 }}'
+        sequence: &stop_closing
+        - action: cover.stop_cover
+          target: { entity_id: !input covers }
+        - action: input_number.set_value
+          data: { value: 4 }
+          target: { entity_id: !input state_variable }
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event == "long_pressed" }}'
+    - '{{ paddle_hold }}'
+    - '{{ state in [0, 2, 3, 4] }}'
+    sequence: *open_covers
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event == "long_released" }}'
+    - '{{ paddle_hold }}'
+    - '{{ state == 1 }}'
+    sequence: &stop_opening
+    - action: cover.stop_cover
+      target: { entity_id: !input covers }
+    - action: input_number.set_value
+      data: { value: 2 }
+      target: { entity_id: !input state_variable }
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event == paddle_taps }}'
+    sequence:
+    - choose:
+      - conditions:
+        - '{{ state in [0, 2, 4] }}'
+        sequence: &close_covers
+        - action: cover.close_cover
+          target: { entity_id: !input covers }
+        - action: input_number.set_value
+          data: { value: 3 }
+          target: { entity_id: !input state_variable }
+      - conditions:
+        - '{{ state == 1 }}'
+        sequence: *stop_opening
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event == "long_pressed" }}'
+    - '{{ paddle_hold }}'
+    - '{{ state in [0, 1, 2, 4] }}'
+    sequence: *close_covers
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event == "long_pressed" }}'
+    - '{{ paddle_hold }}'
+    - '{{ state == 3 }}'
+    sequence: *stop_closing
