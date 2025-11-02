@@ -5,6 +5,13 @@ blueprint:
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen32_lights.yaml
   input:
+    subjects:
+      name: Lights
+      description: Which lights (or fans/switches) to control?
+      selector:
+        entity:
+          domain: ['fan', 'light', 'switch']
+          multiple: true
     controller:
       name: Controller
       description: Which scene controller to use?
@@ -42,13 +49,6 @@ blueprint:
       default: false
       selector:
         boolean:
-    subjects:
-      name: Lights
-      description: Which lights (or fans/switches) to control?
-      selector:
-        entity:
-          domain: ['fan', 'light', 'switch']
-          multiple: true
 
 mode: single
 max_exceeded: silent
@@ -57,29 +57,22 @@ triggers:
 - trigger: state
   entity_id: !input subjects
   to: 'on'
-  id: light_on
+  id: subjects_on
 - trigger: state
   entity_id: !input subjects
   to: 'off'
-  id: light_off
+  id: subjects_off
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
-    <<: &event_data
-      device_id: !input controller
-      command_class_name: Central Scene
-      property_key: !input key
-    value: KeyPressed
-  id: key_pressed
-- trigger: event
-  event_type: zwave_js_value_notification
-  event_data:
-    <<: *event_data
-    value: KeyPressed2x
-  id: key_pressed_twice
+    device_id: !input controller
+    command_class_name: Central Scene
+    property_key: !input key
+  id: key_event
 
 variables:
   controller: !input controller
+  event: '{{ trigger.event.data.value if trigger.id == "key_event" else None }}'
   key: !input key
   led_enable: !input led_enable
   led_invert: !input led_invert
@@ -95,7 +88,7 @@ variables:
 actions:
 - choose:
   - conditions:
-    - '{{ trigger.id == "light_on" }}'
+    - '{{ trigger.id == "subjects_on" }}'
     sequence: &led_on
     - if:
       - '{{ led_enable }}'
@@ -105,7 +98,7 @@ actions:
         target: { device_id: '{{ controller }}' }
 
   - conditions:
-    - '{{ trigger.id == "light_off" }}'
+    - '{{ trigger.id == "subjects_off" }}'
     sequence: &led_off
     - if:
       - '{{ led_enable }}'
@@ -115,8 +108,7 @@ actions:
         target: { device_id: '{{ controller }}' }
 
   - conditions:
-    - '{{ trigger.id == "key_pressed" }}'
-    - '{{ int(trigger.event.data.property_key) == int(key) }}'
+    - '{{ trigger.id == "key_event" and event == "KeyPressed" }}'
     sequence:
     - if:
       - condition: state
@@ -141,8 +133,7 @@ actions:
       - <<: *led_off
 
   - conditions:
-    - '{{ trigger.id == "key_pressed_twice" }}'
-    - '{{ int(trigger.event.data.property_key) == int(key) }}'
+    - '{{ trigger.id == "key_event" and event == "KeyPressed2x" }}'
     sequence:
     - action: fan.turn_on
       data: { percentage: 100 }

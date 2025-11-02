@@ -5,6 +5,13 @@ blueprint:
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/inovelli_white_covers.yaml
   input:
+    covers:
+      name: Covers
+      description: Which covers to control with the switch paddles?
+      selector:
+        entity:
+          domain: cover
+          multiple: true
     up_event:
       name: Up Event
       description: Which event to use for up taps?
@@ -48,17 +55,16 @@ blueprint:
       description: |
         This automation requires a Number helper to store the current state of the shade.
         Please create one that goes from 0 to 4 and select it here.
-        Must only be shared with automations using the same set of shades.
+        Must only be shared with automations controlling the same set of shades.
       selector:
         entity:
           domain: input_number
-    covers:
-      name: Covers
-      description: Which covers to control with the switch paddles?
+    idle_timeout:
+      name: Idle Timeout
+      description: How long to wait before resetting the control state?
+      default: { seconds: 30 }
       selector:
-        entity:
-          domain: cover
-          multiple: true
+        duration:
 
 mode: single
 max_exceeded: silent
@@ -67,25 +73,24 @@ triggers:
 - trigger: state
   attribute: current_position
   entity_id: !input covers
-  to: [0, 100]
-  for: { seconds: 30 }
+  for: !input idle_timeout
   id: reset
-- trigger: state
-  entity_id: !input down_event
-  not_from: unavailable
-  id: down_event
 - trigger: state
   entity_id: !input up_event
   not_from: unavailable
   id: up_event
+- trigger: state
+  entity_id: !input down_event
+  not_from: unavailable
+  id: down_event
 
 variables:
-  event: '{{ trigger.to_state.attributes.event_type }}'
+  event: '{{ trigger.to_state.attributes.event_type if trigger.id in ["up_event", "down_event"] else None }}'
   paddle_hold: !input paddle_hold
   paddle_taps: !input paddle_taps
   state_variable: !input state_variable
   state: '{{ int(states(state_variable)) }}'
-  # 0=nothing 1=up 2=up_stopped 3=down 4=down_stopped
+  # 0=nothing 1=opening 2=opening_stopped 3=closing 4=closing_stopped
 
 actions:
 - choose:

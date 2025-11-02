@@ -5,6 +5,13 @@ blueprint:
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zooz_zen7677_covers.yaml
   input:
+    covers:
+      name: Covers
+      description: Which covers to control with the switch paddles?
+      selector:
+        entity:
+          domain: cover
+          multiple: true
     switch:
       name: Switch
       description: Which switch to use?
@@ -42,30 +49,25 @@ blueprint:
       description: |
         This automation requires a Number helper to store the current state of the shade.
         Please create one that goes from 0 to 4 and select it here.
-        Must only be shared with automations using the same set of shades.
+        Must only be shared with automations controlling the same set of shades.
       selector:
         entity:
           domain: input_number
-    covers:
-      name: Covers
-      description: Which covers to control with the switch paddles?
+    idle_timeout:
+      name: Idle Timeout
+      description: How long to wait before resetting the control state?
+      default: { seconds: 30 }
       selector:
-        entity:
-          domain: cover
-          multiple: true
+        duration:
 
 mode: single
 max_exceeded: silent
-
-trigger_variables:
-  paddle_taps: !input paddle_taps
 
 triggers:
 - trigger: state
   attribute: current_position
   entity_id: !input covers
-  to: [0, 100]
-  for: { seconds: 30 }
+  for: !input idle_timeout
   id: reset
 - trigger: event
   event_type: zwave_js_value_notification
@@ -74,49 +76,21 @@ triggers:
       device_id: !input switch
       command_class_name: Central Scene
     property_key: '001'
-    value: '{{ paddle_taps }}'
-  id: up_pressed
-- trigger: event
-  event_type: zwave_js_value_notification
-  event_data:
-    <<: *event_data
-    property_key: '001'
-    value: 'KeyHeldDown'
-  id: up_held_down
-- trigger: event
-  event_type: zwave_js_value_notification
-  event_data:
-    <<: *event_data
-    property_key: '001'
-    value: 'KeyReleased'
-  id: up_released
+  id: up_event
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
     <<: *event_data
     property_key: '002'
-    value: '{{ paddle_taps }}'
-  id: down_pressed
-- trigger: event
-  event_type: zwave_js_value_notification
-  event_data:
-    <<: *event_data
-    property_key: '002'
-    value: 'KeyHeldDown'
-  id: down_held_down
-- trigger: event
-  event_type: zwave_js_value_notification
-  event_data:
-    <<: *event_data
-    property_key: '002'
-    value: 'KeyReleased'
-  id: down_released
+  id: down_event
 
 variables:
+  event: '{{ trigger.event.data.value if trigger.id in ["up_event", "down_event"] else None }}'
   paddle_hold: !input paddle_hold
+  paddle_taps: !input paddle_taps
   state_variable: !input state_variable
   state: '{{ int(states(state_variable)) }}'
-  # 0=nothing 1=up 2=up_stopped 3=down 4=down_stopped
+  # 0=nothing 1=opening 2=opening_stopped 3=closing 4=closing_stopped
 
 actions:
 - choose:
@@ -128,7 +102,7 @@ actions:
       target: { entity_id: !input state_variable }
 
   - conditions:
-    - '{{ trigger.id == "up_pressed" }}'
+    - '{{ trigger.id == "up_event" and event == paddle_taps }}'
     sequence:
     - choose:
       - conditions:
@@ -149,13 +123,13 @@ actions:
           target: { entity_id: !input state_variable }
 
   - conditions:
-    - '{{ trigger.id == "up_held_down" }}'
+    - '{{ trigger.id == "up_event" and event == "KeyHeldDown" }}'
     - '{{ paddle_hold }}'
     - '{{ state in [0, 2, 3, 4] }}'
     sequence: *open_covers
 
   - conditions:
-    - '{{ trigger.id == "up_released" }}'
+    - '{{ trigger.id == "up_event" and event == "KeyReleased" }}'
     - '{{ paddle_hold }}'
     - '{{ state == 1 }}'
     sequence: &stop_opening
@@ -166,7 +140,7 @@ actions:
       target: { entity_id: !input state_variable }
 
   - conditions:
-    - '{{ trigger.id == "down_pressed" }}'
+    - '{{ trigger.id == "down_event" and event == paddle_taps }}'
     sequence:
     - choose:
       - conditions:
@@ -182,13 +156,13 @@ actions:
         sequence: *stop_opening
 
   - conditions:
-    - '{{ trigger.id == "down_held_down" }}'
+    - '{{ trigger.id == "down_event" and event == "KeyHeldDown" }}'
     - '{{ paddle_hold }}'
     - '{{ state in [0, 1, 2, 4] }}'
     sequence: *close_covers
 
   - conditions:
-    - '{{ trigger.id == "down_released" }}'
+    - '{{ trigger.id == "down_event" and event == "KeyReleased" }}'
     - '{{ paddle_hold }}'
     - '{{ state == 3 }}'
     sequence: *stop_closing
