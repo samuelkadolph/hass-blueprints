@@ -42,7 +42,7 @@ blueprint:
     paddle_hold:
       name: Paddle Hold
       description: Open and close the covers when holding down a paddle?
-      default: true
+      default: false
       selector:
         boolean:
     state_variable:
