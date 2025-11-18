@@ -77,11 +77,11 @@ triggers:
   id: reset
 - trigger: state
   entity_id: !input up_event
-  not_from: unavailable
+  not_from: ['unavailable', 'unknown']
   id: up_event
 - trigger: state
   entity_id: !input down_event
-  not_from: unavailable
+  not_from: ['unavailable', 'unknown']
   id: down_event
 
 variables:
