@@ -57,9 +57,6 @@ blueprint:
 mode: single
 max_exceeded: silent
 
-trigger_variables:
-  paddle_taps: !input paddle_taps
-
 triggers:
 - trigger: event
   event_type: zwave_js_value_notification
@@ -67,24 +64,27 @@ triggers:
     <<: &event_data
       device_id: !input switch
       command_class_name: Central Scene
-      value: '{{ paddle_taps }}'
     property_key: '001'
-  id: up_pressed
+  id: up_event
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
     <<: *event_data
     property_key: '002'
-  id: down_pressed
+  id: down_event
+
+variables:
+  event: '{{ trigger.event.data.value if trigger.id in ["up_event", "down_event"] else None }}'
+  paddle_taps: !input paddle_taps
 
 actions:
 - choose:
   - conditions:
-    - '{{ trigger.id == "up_pressed" }}'
+    - '{{ trigger.id == "up_event" and event == paddle_taps }}'
     - condition: !input up_conditions
     sequence: !input up_actions
 
   - conditions:
-    - '{{ trigger.id == "down_pressed" }}'
+    - '{{ trigger.id == "down_event" and event == paddle_taps }}'
     - condition: !input down_conditions
     sequence: !input down_actions

@@ -82,9 +82,6 @@ blueprint:
 
 mode: restart
 
-trigger_variables:
-  paddle_taps: !input paddle_taps
-
 triggers:
 - trigger: event
   event_type: zwave_js_value_notification
@@ -93,76 +90,33 @@ triggers:
       device_id: !input switch
       command_class_name: Central Scene
     property_key: '001'
-    value: '{{ paddle_taps }}'
-  id: up_pressed
-- trigger: event
-  event_type: zwave_js_value_notification
-  event_data:
-    <<: *event_data
-    property_key: '001'
-    value: 'KeyPressed2x'
-  id: up_pressed_twice
-- trigger: event
-  event_type: zwave_js_value_notification
-  event_data:
-    <<: *event_data
-    property_key: '001'
-    value: 'KeyHeldDown'
-  id: up_held_down
-- trigger: event
-  event_type: zwave_js_value_notification
-  event_data:
-    <<: *event_data
-    property_key: '001'
-    value: 'KeyReleased'
-  id: up_released
+  id: up_event
 - trigger: event
   event_type: zwave_js_value_notification
   event_data:
     <<: *event_data
     property_key: '002'
-    value: '{{ paddle_taps }}'
-  id: down_pressed
-- trigger: event
-  event_type: zwave_js_value_notification
-  event_data:
-    <<: *event_data
-    property_key: '002'
-    value: 'KeyPressed2x'
-  id: down_pressed_twice
-- trigger: event
-  event_type: zwave_js_value_notification
-  event_data:
-    <<: *event_data
-    property_key: '002'
-    value: 'KeyHeldDown'
-  id: down_held_down
-- trigger: event
-  event_type: zwave_js_value_notification
-  event_data:
-    <<: *event_data
-    property_key: '002'
-    value: 'KeyReleased'
-  id: down_released
+  id: down_event
 
 variables:
   double_tap: !input double_tap
-  double_tap_up_brightness: !input double_tap_up_brightness
   double_tap_down_brightness: !input double_tap_down_brightness
+  double_tap_up_brightness: !input double_tap_up_brightness
+  event: '{{ trigger.event.data.value if trigger.id in ["up_event", "down_event"] else None }}'
   paddle_hold: !input paddle_hold
   paddle_hold_step_brightness: !input paddle_hold_step_brightness
   paddle_hold_step_interval: !input paddle_hold_step_interval
+  paddle_taps: !input paddle_taps
   subjects: !input subjects
   subjects_list: '{{ subjects is list and subjects or [subjects] }}'
   fans: '{{ subjects_list | select("search", "^fan\.") | list }}'
   lights: '{{ subjects_list | select("search", "^light\.") | list }}'
-  first_light: '{{ lights | first }}'
   switches: '{{ subjects_list | select("search", "^switch\.") | list }}'
 
 actions:
 - choose:
   - conditions:
-    - '{{ trigger.id == "up_pressed" }}'
+    - '{{ trigger.id == "up_event" and event == paddle_taps }}'
     sequence:
     - action: fan.turn_on
       target: { entity_id: '{{ fans }}' }
@@ -172,7 +126,7 @@ actions:
       target: { entity_id: '{{ switches }}' }
 
   - conditions:
-    - '{{ trigger.id == "up_pressed_twice" }}'
+    - '{{ trigger.id == "up_event" and event == "KeyPressed2x" }}'
     - '{{ double_tap }}'
     sequence:
       action: light.turn_on
@@ -180,7 +134,7 @@ actions:
       data: { brightness_pct: '{{ double_tap_up_brightness }}' }
 
   - conditions:
-    - '{{ trigger.id == "up_held_down" }}'
+    - '{{ trigger.id == "up_event" and event == "KeyHeldDown" }}'
     - '{{ paddle_hold }}'
     sequence:
     - repeat:
@@ -189,15 +143,15 @@ actions:
           target: { entity_id: '{{ lights }}' }
           data: { brightness_step_pct: '{{ paddle_hold_step_brightness }}' }
         - delay: { milliseconds: '{{ paddle_hold_step_interval }}' }
-        until: '{{ state_attr(first_light, "brightness") | default(0, true) >= 255 }}'
+        until: '{{ min(expand(lights) | map(attribute="attributes.brightness") | map("int", 0)) >= 255 }}'
 
   - conditions:
-    - '{{ trigger.id == "up_released" }}'
+    - '{{ trigger.id == "up_event" and event == "KeyReleased" }}'
     - '{{ paddle_hold }}'
     sequence: []
 
   - conditions:
-    - '{{ trigger.id == "down_pressed" }}'
+    - '{{ trigger.id == "down_event" and event == paddle_taps }}'
     sequence:
     - action: fan.turn_off
       target: { entity_id: '{{ fans }}' }
@@ -207,7 +161,7 @@ actions:
       target: { entity_id: '{{ switches }}' }
 
   - conditions:
-    - '{{ trigger.id == "down_pressed_twice" }}'
+    - '{{ trigger.id == "down_event" and event == "KeyPressed2x" }}'
     - '{{ double_tap }}'
     sequence:
       action: light.turn_on
@@ -215,7 +169,7 @@ actions:
       data: { brightness_pct: '{{ double_tap_down_brightness }}' }
 
   - conditions:
-    - '{{ trigger.id == "down_held_down" }}'
+    - '{{ trigger.id == "down_event" and event == "KeyHeldDown" }}'
     - '{{ paddle_hold }}'
     sequence:
     - repeat:
@@ -224,9 +178,9 @@ actions:
           target: { entity_id: '{{ lights }}' }
           data: { brightness_step_pct: '{{ -paddle_hold_step_brightness }}' }
         - delay: { milliseconds: '{{ paddle_hold_step_interval }}' }
-        until: '{{ state_attr(first_light, "brightness") | default(0, true) <= 0 }}'
+        until: '{{ min(expand(lights) | map(attribute="attributes.brightness") | map("int", 0)) <= 0 }}'
 
   - conditions:
-    - '{{ trigger.id == "down_released" }}'
+    - '{{ trigger.id == "down_event" and event == "KeyReleased" }}'
     - '{{ paddle_hold }}'
     sequence: []
