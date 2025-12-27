@@ -1,0 +1,105 @@
+blueprint:
+  name: Fridge Temperature Alert
+  description: Persistent notifications for when a fridge/freezer temperature is out of range.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/fridge_temperature_alert.yaml
+  input:
+    area:
+      name: Area
+      description: What is the name of the area for the alert?
+      selector: { text: }
+    sensors:
+      name: Temperature Sensors
+      description: Which temperature sensors should be monitored?
+      default: []
+      selector:
+        entity:
+          filter:
+          - domain: sensor
+            device_class: temperature
+          multiple: true
+    upper_range:
+      name: Upper Range
+      description: Temperatures above this value will trigger the alert.
+      default: 15
+      selector: &temperature_selector
+        number:
+          max: 40
+          min: -40
+          step: 0.1
+          unit_of_measurement: '°C'
+    lower_range:
+      name: Lower Range
+      description: Temperatures below this value will trigger the alert.
+      default: -20
+      selector: *temperature_selector
+    out_of_range_for:
+      name: Out of Range For
+      description: How long does the temperature have to be out of range before triggering the alert?
+      default: { minutes: 5 }
+      selector: { duration: }
+    notify_action:
+      name: Notify Action
+      description: Which notify action to use? Must be a mobile_app notify action.
+      default: notify.notify
+      selector: { text: }
+
+mode: single
+max_exceeded: silent
+
+triggers:
+- trigger: numeric_state
+  entity_id: !input sensors
+  above: !input upper_range
+  for: !input out_of_range_for
+  id: above_range
+- trigger: numeric_state
+  entity_id: !input sensors
+  below: !input lower_range
+  for: !input out_of_range_for
+  id: below_range
+- trigger: numeric_state
+  entity_id: !input sensors
+  above: !input lower_range
+  below: !input upper_range
+  for: !input out_of_range_for
+  id: in_range
+
+conditions:
+- '{{ trigger.from_state.state not in ["unknown", "unavailable"] }}'
+- '{{ trigger.to_state.state not in ["unknown", "unavailable"] }}'
+
+variables:
+  area: !input area
+
+actions:
+- choose:
+  - conditions: '{{ trigger.id in ["above_range", "below_range"] }}'
+    sequence:
+    - action: persistent_notification.create
+      data:
+        title: &message >-
+          {{ area }} is out of range at {{ trigger.to_state.state | round(1) }} {{ trigger.to_state.attributes.unit_of_measurement }}!
+        message: &title >-
+          Temperature Out of Range
+        notification_id: &tag >-
+          {{ trigger.entity_id }}
+    - action: !input notify_action
+      data:
+        message: *message
+        title: *title
+        data:
+          persistent: true
+          tag: *tag
+
+  - conditions: '{{ trigger.id == "in_range" }}'
+    sequence:
+    - action: persistent_notification.dismiss
+      data:
+        notification_id: *tag
+    - action: !input notify_action
+      data:
+        message: 'clear_notification'
+        data:
+          tag: *tag
