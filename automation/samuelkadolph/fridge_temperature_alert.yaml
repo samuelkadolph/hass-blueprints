@@ -1,6 +1,6 @@
 blueprint:
   name: Fridge Temperature Alert
-  description: Persistent notifications for when a fridge/freezer temperature is out of range.
+  description: Persistent notification for when a fridge/freezer temperature is out of range.
   domain: automation
   author: Samuel Kadolph
   source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/fridge_temperature_alert.yaml
@@ -77,21 +77,21 @@ actions:
 - choose:
   - conditions: '{{ trigger.id in ["above_range", "below_range"] }}'
     sequence:
-    - action: persistent_notification.create
-      data:
-        title: &message >-
-          {{ area }} is out of range at {{ trigger.to_state.state | round(1) }} {{ trigger.to_state.attributes.unit_of_measurement }}!
-        message: &title >-
-          Temperature Out of Range
-        notification_id: &tag >-
-          {{ trigger.entity_id }}
     - action: !input notify_action
       data:
-        message: *message
-        title: *title
+        message: &message >-
+          {{ area }} is {{ "above" if trigger.id == "above_range" else "below" }} alert range!
+        title: &title >-
+          Temperature Alert
         data:
           persistent: true
-          tag: *tag
+          tag: &tag >-
+            {{ trigger.entity_id }}
+    - action: persistent_notification.create
+      data:
+        title: *message
+        message: *title
+        notification_id: *tag
 
   - conditions: '{{ trigger.id == "in_range" }}'
     sequence:
