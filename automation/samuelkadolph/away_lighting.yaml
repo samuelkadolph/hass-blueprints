@@ -123,18 +123,17 @@ blueprint:
       description: Which zone must be empty to enable away lighting?
       default: zone.home
       selector:
-        entity:
-          domain: zone
+        entity: { domain: zone }
 
 mode: restart
 
 trigger_variables:
-  off_elevation_helper: !input off_elevation_helper
-  off_elevation_manual: !input off_elevation_manual
-  off_trigger: !input off_trigger
+  on_trigger: !input on_trigger
   on_elevation_helper: !input on_elevation_helper
   on_elevation_manual: !input on_elevation_manual
-  on_trigger: !input on_trigger
+  off_trigger: !input off_trigger
+  off_elevation_helper: !input off_elevation_helper
+  off_elevation_manual: !input off_elevation_manual
 
 triggers:
 - trigger: template
@@ -169,16 +168,16 @@ triggers:
   id: person_arrived
 
 variables:
-  off_delay_max: !input off_delay_max
-  off_delay_min: !input off_delay_min
-  off_delay_rand: '{{ range(off_delay_min.get("hours", 0) * 3600 + off_delay_min.get("minutes", 0) * 60 + off_delay_min.get("seconds", 0), off_delay_max.get("hours", 0) * 3600 + off_delay_max.get("minutes", 0) * 60 + off_delay_max.get("seconds", 0)) | random }}'
-  off_time_helper: !input off_time_helper
-  off_trigger: !input off_trigger
+  on_trigger: !input on_trigger
+  on_time_helper: !input on_time_helper
   on_delay_max: !input on_delay_max
   on_delay_min: !input on_delay_min
   on_delay_rand: '{{ range(on_delay_min.get("hours", 0) * 3600 + on_delay_min.get("minutes", 0) * 60 + on_delay_min.get("seconds", 0), on_delay_max.get("hours", 0) * 3600 + on_delay_max.get("minutes", 0) * 60 + on_delay_max.get("seconds", 0)) | random }}'
-  on_time_helper: !input on_time_helper
-  on_trigger: !input on_trigger
+  off_trigger: !input off_trigger
+  off_time_helper: !input off_time_helper
+  off_delay_max: !input off_delay_max
+  off_delay_min: !input off_delay_min
+  off_delay_rand: '{{ range(off_delay_min.get("hours", 0) * 3600 + off_delay_min.get("minutes", 0) * 60 + off_delay_min.get("seconds", 0), off_delay_max.get("hours", 0) * 3600 + off_delay_max.get("minutes", 0) * 60 + off_delay_max.get("seconds", 0)) | random }}'
 
 actions:
 - choose:
