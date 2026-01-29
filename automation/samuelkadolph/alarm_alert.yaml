@@ -1,0 +1,54 @@
+blueprint:
+  name: Alarm Alert
+  description: Critical push notifications when an alarm goes off.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/alarm_alert.yaml
+  input:
+    area:
+      name: Area
+      description: What is the name of the area for the alert?
+      selector: { text: }
+    panels:
+      name: Alarm Panels
+      description: Which alarm control panels should be monitored?
+      selector:
+        entity:
+          filter: { domain: alarm_control_panel }
+          multiple: true
+    delay:
+      name: Repeat Delay
+      description: How long to wait before repeating the alert?
+      default: { minutes: 2 }
+      selector: { duration: }
+    notify_action:
+      name: Notify Action
+      description: Which notify action to use? Must be a mobile_app notify action.
+      default: notify.default
+      selector: { text: }
+
+mode: single
+max_exceeded: silent
+
+trigger:
+- platform: state
+  entity_id: !input panels
+  to: 'triggered'
+
+variables:
+  area: !input area
+
+action:
+- repeat:
+    while:
+    - condition: state
+      entity_id: !input panels
+      match: any
+      state: 'triggered'
+    sequence:
+    - service: !input notify_action
+      data:
+        data: { push: { interruption-level: critical } }
+        title: ALARM!
+        message: '{{ area }} alarm has been triggered!'
+    - delay: !input delay
