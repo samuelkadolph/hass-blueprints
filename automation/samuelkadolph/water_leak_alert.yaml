@@ -1,0 +1,74 @@
+blueprint:
+  name: Water Leak Alert
+  description: Critical notifications and Alexa annoucements when a water leak is detected.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/water_leak_alert.yaml
+  input:
+    area:
+      name: Area
+      description: What is the name of the area for the alert?
+      selector: { text: }
+    leak_sensors:
+      name: Leak Sensors
+      description: Which moisture sensors should be monitored?
+      selector:
+        entity:
+          filter:
+          - domain: binary_sensor
+            device_class: moisture
+          multiple: true
+    delay:
+      name: Repeat Delay
+      description: How long to wait before repeating the alert?
+      default: { minutes: 2 }
+      selector: { duration: }
+    notify_action:
+      name: Notify Action
+      description: Which notify action to use? Must be a mobile_app notify action.
+      default: notify.default
+      selector: { text: }
+    notify_alexa:
+      name: Notify Alexa
+      description: Which Alexa devices to announce to?
+      default: [ media_player.everywhere ]
+      selector:
+        entity:
+          filter:
+          - integration: alexa_media
+            domain: media_player
+          multiple: true
+
+mode: single
+max_exceeded: silent
+
+trigger:
+- platform: state
+  entity_id: !input leak_sensors
+  to: 'on'
+
+variables:
+  area: !input area
+
+actions:
+- repeat:
+    while:
+    - condition: state
+      entity_id: !input leak_sensors
+      match: any
+      state: 'on'
+    sequence:
+    - action: !input notify_action
+      data:
+        data: { push: { interruption-level: critical } }
+        message: &message >-
+          Water leak in {{ area }}!
+        title: &title >-
+          Water Leak
+    - action: notify.alexa_media
+      data:
+        data: { type: announce }
+        message: *message
+        target: !input notify_alexa
+        title: *title
+    - delay: !input delay
