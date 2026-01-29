@@ -1,9 +1,9 @@
 blueprint:
-  name: Fridge Temperature Alert
-  description: Persistent notification for when a fridge/freezer temperature is out of range.
+  name: Temperature Alert
+  description: Persistent notification for when a temperature is out of range.
   domain: automation
   author: Samuel Kadolph
-  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/fridge_temperature_alert.yaml
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/temperature_alert.yaml
   input:
     area:
       name: Area
@@ -28,7 +28,7 @@ blueprint:
           max: 40
           min: -40
           step: 0.1
-          unit_of_measurement: '°C'
+          unit_of_measurement: °C
     lower_range:
       name: Lower Range
       description: Temperatures below this value will trigger the alert.
@@ -59,47 +59,42 @@ triggers:
   below: !input lower_range
   for: !input out_of_range_for
   id: below_range
-- trigger: numeric_state
-  entity_id: !input sensors
-  above: !input lower_range
-  below: !input upper_range
-  for: !input out_of_range_for
-  id: in_range
 
 conditions:
-- '{{ trigger.from_state.state not in ["unknown", "unavailable"] }}'
-- '{{ trigger.to_state.state not in ["unknown", "unavailable"] }}'
+- '{{ trigger.from_state.state not in ["unavailable", "unknown"] }}'
+- '{{ trigger.to_state.state not in ["unavailable", "unknown"] }}'
 
 variables:
   area: !input area
 
 actions:
-- choose:
-  - conditions: '{{ trigger.id in ["above_range", "below_range"] }}'
-    sequence:
-    - action: !input notify_action
-      data:
-        message: &message >-
-          {{ area }} is {{ "above" if trigger.id == "above_range" else "below" }} alert range!
-        title: &title >-
-          Temperature Alert
-        data:
-          persistent: true
-          tag: &tag >-
-            {{ trigger.entity_id }}
-    - action: persistent_notification.create
-      data:
-        title: *message
-        message: *title
-        notification_id: *tag
-
-  - conditions: '{{ trigger.id == "in_range" }}'
-    sequence:
-    - action: persistent_notification.dismiss
-      data:
-        notification_id: *tag
-    - action: !input notify_action
-      data:
-        message: 'clear_notification'
-        data:
-          tag: *tag
+- action: !input notify_action
+  data:
+    message: &message >-
+      {{ area }} is {{ iif(trigger.id == "above_range", "above", "below") }} alert range!
+    title: &title >-
+      Temperature Alert
+    data:
+      persistent: true
+      tag: &tag >-
+        {{ trigger.entity_id }}
+- action: persistent_notification.create
+  data:
+    title: *message
+    message: *title
+    notification_id: *tag
+- wait_for_trigger:
+  - trigger: numeric_state
+    entity_id: !input sensors
+    above: !input lower_range
+    below: !input upper_range
+    for: !input out_of_range_for
+    id: in_range
+- action: !input notify_action
+  data:
+    message: clear_notification
+    data:
+      tag: *tag
+- action: persistent_notification.dismiss
+  data:
+    notification_id: *tag
