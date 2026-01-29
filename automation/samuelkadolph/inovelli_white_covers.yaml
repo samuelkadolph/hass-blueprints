@@ -29,7 +29,7 @@ blueprint:
     paddle_taps:
       name: Paddle Taps
       description: How many taps on a paddle are required?
-      default: 'KeyPressed'
+      default: 'multi_press_1'
       selector:
         select:
           mode: dropdown
