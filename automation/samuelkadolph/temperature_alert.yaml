@@ -89,12 +89,9 @@ actions:
     above: !input lower_range
     below: !input upper_range
     for: !input out_of_range_for
-    id: in_range
 - action: !input notify_action
   data:
     message: clear_notification
-    data:
-      tag: *tag
+    data: { tag: *tag }
 - action: persistent_notification.dismiss
-  data:
-    notification_id: *tag
+  data: { notification_id: *tag }
