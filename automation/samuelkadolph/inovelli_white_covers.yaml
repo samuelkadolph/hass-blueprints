@@ -48,8 +48,7 @@ blueprint:
       name: Paddle Hold
       description: Open or close the covers when holding down a paddle?
       default: false
-      selector:
-        boolean:
+      selector: { boolean: }
     state_variable:
       name: State Variable
       description: |
@@ -63,8 +62,7 @@ blueprint:
       name: Idle Timeout
       description: How long to wait before resetting the control state?
       default: { seconds: 30 }
-      selector:
-        duration:
+      selector: { duration: }
 
 mode: single
 max_exceeded: silent
@@ -77,11 +75,13 @@ triggers:
   id: reset
 - trigger: state
   entity_id: !input up_event
-  not_from: ['unavailable', 'unknown']
+  not_from: &not_from_or_to ['unavailable', 'unknown']
+  not_to: *not_from_or_to
   id: up_event
 - trigger: state
   entity_id: !input down_event
-  not_from: ['unavailable', 'unknown']
+  not_from: *not_from_or_to
+  not_to: *not_from_or_to
   id: down_event
 
 variables:
@@ -162,7 +162,7 @@ actions:
     sequence: *close_covers
 
   - conditions:
-    - '{{ trigger.id == "down_event" and event == "long_pressed" }}'
+    - '{{ trigger.id == "down_event" and event == "long_released" }}'
     - '{{ paddle_hold }}'
     - '{{ state == 3 }}'
     sequence: *stop_closing
