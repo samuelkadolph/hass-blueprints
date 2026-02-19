@@ -1,0 +1,78 @@
+blueprint:
+  name: Door Ajar Alert
+  description: Critical notifications and Alexa annoucements when a door is left open.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/door_ajar_alert.yaml
+  input:
+    door:
+      name: Door
+      description: What is the name of the door for the alert?
+      selector: { text: }
+    door_sensors:
+      name: Door Sensors
+      description: Which door sensors should be monitored?
+      selector:
+        entity:
+          filter:
+          - domain: binary_sensor
+            device_class: door
+          multiple: true
+    open_for:
+      name: Open For
+      description: How long does the door have to be open before triggering the alert?
+      default: { minutes: 5 }
+      selector: { duration: }
+    delay:
+      name: Repeat Delay
+      description: How long to wait before repeating the alert?
+      default: { minutes: 2 }
+      selector: { duration: }
+    notify_action:
+      name: Notify Action
+      description: Which notify action to use? Must be a mobile_app notify action.
+      default: notify.default
+      selector: { text: }
+    notify_alexa:
+      name: Notify Alexa
+      description: Which Alexa devices to announce to?
+      default: [ media_player.everywhere ]
+      selector:
+        entity:
+          filter:
+          - integration: alexa_media
+            domain: media_player
+          multiple: true
+
+mode: single
+max_exceeded: silent
+
+triggers:
+- trigger: state
+  entity_id: !input door_sensors
+  to: 'on'
+  for: !input open_for
+
+variables:
+  door: !input door
+
+actions:
+- repeat:
+    while:
+    - condition: state
+      entity_id: !input door_sensors
+      match: any
+      state: 'on'
+    sequence:
+    - action: !input notify_action
+      data:
+        data: { push: { interruption-level: critical } }
+        message: '{{ door }} door has been left open!'
+        title: &title 'Door Left Open'
+    - action: notify.alexa_media
+      data:
+        data: { type: announce }
+        message: 'Alert! {{ door }} door has been left open!'
+        target: !input notify_alexa
+        title: *title
+    - delay: !input delay
