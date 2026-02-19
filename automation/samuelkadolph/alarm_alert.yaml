@@ -31,7 +31,7 @@ mode: single
 max_exceeded: silent
 
 trigger:
-- platform: state
+- trigger: state
   entity_id: !input panels
   to: 'triggered'
 
@@ -49,6 +49,6 @@ action:
     - service: !input notify_action
       data:
         data: { push: { interruption-level: critical } }
-        title: ALARM!
         message: '{{ area }} alarm has been triggered!'
+        title: ALARM!
     - delay: !input delay

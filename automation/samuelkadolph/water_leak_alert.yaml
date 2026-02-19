@@ -43,7 +43,7 @@ mode: single
 max_exceeded: silent
 
 trigger:
-- platform: state
+- trigger: state
   entity_id: !input leak_sensors
   to: 'on'
 
@@ -61,14 +61,12 @@ actions:
     - action: !input notify_action
       data:
         data: { push: { interruption-level: critical } }
-        message: &message >-
-          Water leak in {{ area }}!
-        title: &title >-
-          Water Leak
+        message: 'Alert! Water leak in {{ area }}!'
+        title: &title 'Water Leak'
     - action: notify.alexa_media
       data:
         data: { type: announce }
-        message: *message
+        message: 'Water leak in {{ area }}!'
         target: !input notify_alexa
         title: *title
     - delay: !input delay

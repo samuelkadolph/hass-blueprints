@@ -70,14 +70,11 @@ variables:
 actions:
 - action: !input notify_action
   data:
-    message: &message >-
-      {{ area }} is {{ iif(trigger.id == "above_range", "above", "below") }} alert range!
-    title: &title >-
-      Temperature Alert
+    message: &message '{{ area }} is {{ iif(trigger.id == "above_range", "above", "below") }} alert range!'
+    title: &title 'Temperature Alert'
     data:
       persistent: true
-      tag: &tag >-
-        {{ trigger.entity_id }}
+      tag: &tag '{{ trigger.entity_id }}'
 - action: persistent_notification.create
   data:
     title: *message
