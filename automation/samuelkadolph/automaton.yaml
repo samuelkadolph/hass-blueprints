@@ -142,15 +142,15 @@ blueprint:
 mode: single
 
 trigger_variables:
+  first_trigger: !input first_trigger
   first_elevation_helper: !input first_elevation_helper
   first_elevation_manual: !input first_elevation_manual
-  first_trigger: !input first_trigger
+  second_trigger: !input second_trigger
   second_elevation_helper: !input second_elevation_helper
   second_elevation_manual: !input second_elevation_manual
-  second_trigger: !input second_trigger
+  third_trigger: !input third_trigger
   third_elevation_helper: !input third_elevation_helper
   third_elevation_manual: !input third_elevation_manual
-  third_trigger: !input third_trigger
 
 triggers:
 - trigger: template
@@ -211,12 +211,12 @@ triggers:
   id: third_time_manual
 
 variables:
-  first_time_helper: !input first_time_helper
   first_trigger: !input first_trigger
-  second_time_helper: !input second_time_helper
+  first_time_helper: !input first_time_helper
   second_trigger: !input second_trigger
-  third_time_helper: !input third_time_helper
+  second_time_helper: !input second_time_helper
   third_trigger: !input third_trigger
+  third_time_helper: !input third_time_helper
 
 actions:
 - choose:
