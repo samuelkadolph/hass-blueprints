@@ -1,17 +1,10 @@
 blueprint:
-  name: Inovelli White Covers
-  description: Control covers with an Inovelli White wall switch.
+  name: Matter Switch Covers
+  description: Control covers with a Matter wall switch.
   domain: automation
   author: Samuel Kadolph
-  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/inovelli_white_covers.yaml
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/matter_switch_covers.yaml
   input:
-    covers:
-      name: Covers
-      description: Which covers to control with the switch paddles?
-      selector:
-        entity:
-          domain: cover
-          multiple: true
     up_event:
       name: Up Event
       description: Which event to use for up taps?
@@ -49,6 +42,13 @@ blueprint:
       description: Open or close the covers when holding down a paddle?
       default: false
       selector: { boolean: }
+    covers:
+      name: Covers
+      description: Which covers to control with the switch paddles?
+      selector:
+        entity:
+          domain: cover
+          multiple: true
     state_variable:
       name: State Variable
       description: |
