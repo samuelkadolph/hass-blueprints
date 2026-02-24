@@ -1,0 +1,88 @@
+blueprint:
+  name: Z-Wave Switch Actions
+  description: Run actions with paddle taps on a Z-Wave wall switch.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zwave_switch_actions.yaml
+  input:
+    up_event:
+      name: Up Event
+      description: Which event to use for up taps?
+      selector: &event-selector
+        entity:
+          filter:
+          - domain: event
+            integration: zwave_js
+          multiple: true
+    down_event:
+      name: Down Event
+      description: Which event to use for down taps?
+      selector: *event-selector
+    paddle_taps:
+      name: Paddle Taps
+      description: How many taps on a paddle are required?
+      default: 'KeyPressed'
+      selector:
+        select:
+          mode: dropdown
+          options:
+          - label: 'Single'
+            value: 'KeyPressed'
+          - label: 'Double'
+            value: 'KeyPressed2x'
+          - label: 'Triple'
+            value: 'KeyPressed3x'
+          - label: 'Quadruple'
+            value: 'KeyPressed4x'
+          - label: 'Quintuple'
+            value: 'KeyPressed5x'
+    up_actions:
+      name: Up Actions
+      description: What should we do when the up paddle is tapped?
+      default: []
+      selector: &actions-selector { action: }
+    up_conditions:
+      name: Up Conditions
+      description: What conditions should be checked before running the up actions?
+      default: []
+      selector: &conditions-selector { condition: }
+    down_actions:
+      name: Down Actions
+      description: What should we do when the down paddle is tapped?
+      default: []
+      selector: *actions-selector
+    down_conditions:
+      name: Down Conditions
+      description: What conditions should be checked before running the down actions?
+      default: []
+      selector: *conditions-selector
+
+mode: single
+max_exceeded: silent
+
+triggers:
+- trigger: state
+  entity_id: !input up_event
+  not_from: &not_from_or_to ['unavailable', 'unknown']
+  not_to: *not_from_or_to
+  id: up_event
+- trigger: state
+  entity_id: !input down_event
+  not_from: *not_from_or_to
+  not_to: *not_from_or_to
+  id: down_event
+
+variables:
+  event: '{{ trigger.to_state.attributes.event_type if trigger.id in ["up_event", "down_event"] else None }}'
+  paddle_taps: !input paddle_taps
+
+actions:
+- choose:
+  - conditions:
+    - '{{ trigger.id == "up_event" and event == paddle_taps }}'
+    - condition: !input up_conditions
+    sequence: !input up_actions
+  - conditions:
+    - '{{ trigger.id == "down_event" and event == paddle_taps }}'
+    - condition: !input down_conditions
+    sequence: !input down_actions

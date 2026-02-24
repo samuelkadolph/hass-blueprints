@@ -1,0 +1,169 @@
+blueprint:
+  name: Z-Wave Switch Covers
+  description: Control covers with a Z-Wave wall switch.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/zwave_switch_covers.yaml
+  input:
+    up_event:
+      name: Up Event
+      description: Which event to use for up taps?
+      selector: &event-selector
+        entity:
+          filter:
+          - domain: event
+            integration: zwave_js
+          multiple: true
+    down_event:
+      name: Down Event
+      description: Which event to use for down taps?
+      selector: *event-selector
+    paddle_taps:
+      name: Paddle Taps
+      description: How many taps on a paddle are required?
+      default: 'KeyPressed'
+      selector:
+        select:
+          mode: dropdown
+          options:
+          - label: 'Single'
+            value: 'KeyPressed'
+          - label: 'Double'
+            value: 'KeyPressed2x'
+          - label: 'Triple'
+            value: 'KeyPressed3x'
+          - label: 'Quadruple'
+            value: 'KeyPressed4x'
+          - label: 'Quintuple'
+            value: 'KeyPressed5x'
+    paddle_hold:
+      name: Paddle Hold
+      description: Open or close the covers when holding down a paddle?
+      default: false
+      selector: { boolean: }
+    covers:
+      name: Covers
+      description: Which covers to control with the switch paddles?
+      selector:
+        entity:
+          domain: cover
+          multiple: true
+    state_variable:
+      name: State Variable
+      description: |
+        This automation requires a Number helper to store the current state of the shade.
+        Please create one that goes from 0 to 4 and select it here.
+        Must only be shared with automations controlling the same set of shades.
+      selector: { entity: { domain: input_number } }
+    idle_timeout:
+      name: Idle Timeout
+      description: How long to wait before resetting the control state?
+      default: { seconds: 30 }
+      selector: { duration: }
+
+mode: single
+max_exceeded: silent
+
+triggers:
+- trigger: state
+  attribute: current_position
+  entity_id: !input covers
+  for: !input idle_timeout
+  id: reset
+- trigger: state
+  entity_id: !input up_event
+  not_from: &not_from_or_to ['unavailable', 'unknown']
+  not_to: *not_from_or_to
+  id: up_event
+- trigger: state
+  entity_id: !input down_event
+  not_from: *not_from_or_to
+  not_to: *not_from_or_to
+  id: down_event
+
+variables:
+  event: '{{ trigger.to_state.attributes.event_type if trigger.id in ["up_event", "down_event"] else None }}'
+  paddle_hold: !input paddle_hold
+  paddle_taps: !input paddle_taps
+  state_variable: !input state_variable
+  state: '{{ int(states(state_variable)) }}'
+  state_idle: 0
+  state_opening: 1
+  state_opening_stopped: 2
+  state_closing: 3
+  state_closing_stopped: 4
+
+actions:
+- choose:
+  - conditions:
+    - '{{ trigger.id == "reset" }}'
+    sequence:
+    - action: input_number.set_value
+      data: { value: '{{ state_idle }}' }
+      target: { entity_id: !input state_variable }
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event == paddle_taps }}'
+    sequence:
+    - choose:
+      - conditions:
+        - '{{ state in [state_idle, state_opening_stopped, state_closing_stopped] }}'
+        sequence: &open_covers
+        - action: cover.open_cover
+          target: { entity_id: !input covers }
+        - action: input_number.set_value
+          data: { value: '{{ state_opening }}' }
+          target: { entity_id: !input state_variable }
+      - conditions:
+        - '{{ state == state_closing }}'
+        sequence: &stop_closing
+        - action: cover.stop_cover
+          target: { entity_id: !input covers }
+        - action: input_number.set_value
+          data: { value: '{{ state_closing_stopped }}' }
+          target: { entity_id: !input state_variable }
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event == "KeyHeldDown" }}'
+    - '{{ paddle_hold }}'
+    - '{{ state != state_opening }}'
+    sequence: *open_covers
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event == "KeyReleased" }}'
+    - '{{ paddle_hold }}'
+    - '{{ state == state_opening }}'
+    sequence: &stop_opening
+    - action: cover.stop_cover
+      target: { entity_id: !input covers }
+    - action: input_number.set_value
+      data: { value: '{{ state_opening_stopped }}' }
+      target: { entity_id: !input state_variable }
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event == paddle_taps }}'
+    sequence:
+    - choose:
+      - conditions:
+        - '{{ state in [state_idle, state_opening_stopped, state_closing_stopped] }}'
+        sequence: &close_covers
+        - action: cover.close_cover
+          target: { entity_id: !input covers }
+        - action: input_number.set_value
+          data: { value: '{{ state_closing }}' }
+          target: { entity_id: !input state_variable }
+      - conditions:
+        - '{{ state == state_opening }}'
+        sequence: *stop_opening
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event == "KeyHeldDown" }}'
+    - '{{ paddle_hold }}'
+    - '{{ state != state_closing }}'
+    sequence: *close_covers
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event == "KeyReleased" }}'
+    - '{{ paddle_hold }}'
+    - '{{ state == state_closing }}'
+    sequence: *stop_closing
