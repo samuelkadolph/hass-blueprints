@@ -60,10 +60,6 @@ triggers:
   for: !input out_of_range_for
   id: below_range
 
-conditions:
-- '{{ trigger.from_state.state not in ["unavailable", "unknown"] }}'
-- '{{ trigger.to_state.state not in ["unavailable", "unknown"] }}'
-
 variables:
   area: !input area
 
@@ -74,7 +70,7 @@ actions:
     title: &title 'Temperature Alert'
     data:
       persistent: true
-      tag: &tag '{{ trigger.entity_id }}'
+      tag: &tag '{{ this.entity_id }}'
 - action: persistent_notification.create
   data:
     title: *message
