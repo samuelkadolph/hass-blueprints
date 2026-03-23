@@ -1,0 +1,89 @@
+blueprint:
+  name: Door Sensor Lights
+  description: Control lights (or fans/switches) with a door sensor.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/door_sensor_lights.yaml
+  input:
+    door_sensors:
+      name: Door Sensors
+      description: Which door sensors should control the lights?
+      selector:
+        entity:
+          filter:
+          - domain: binary_sensor
+            device_class: door
+          multiple: true
+    subjects:
+      name: Lights
+      description: Which lights (or fans/switches) to turn on or off when the door sensor opens or closes?
+      selector:
+        entity:
+          domain: ['fan', 'light', 'switch']
+          multiple: true
+    on_enabled:
+      name: On Enabled
+      description: Turn lights on when door sensor opens?
+      selector: { boolean: }
+      default: true
+    off_enabled:
+      name: Off Enabled
+      description: Turn lights off when door sensor closes?
+      selector: { boolean: }
+      default: true
+    invert:
+      name: Invert
+      description: Invert the door sensor value?
+      selector: { boolean: }
+      default: false
+    conditions:
+      name: Conditions
+      description: What conditions should be checked before turning the lights on or off?
+      selector: { condition: }
+      default: []
+    on_conditions:
+      name: On Conditions
+      description: What conditions should be checked before turning on the lights?
+      selector: { condition: }
+      default: []
+    off_conditions:
+      name: Off Conditions
+      description: What conditions should be checked before turning off the lights?
+      selector: { condition: }
+      default: []
+
+mode: single
+
+triggers:
+- trigger: state
+  entity_id: !input door_sensors
+  not_from: ['unavailable', 'unknown']
+  not_to: ['unavailable', 'unknown']
+
+conditions:
+- condition: !input conditions
+
+variables:
+  invert: !input invert
+  on_enabled: !input on_enabled
+  on_value: '{{ iif(invert, "off", "on") }}'
+  off_enabled: !input off_enabled
+  off_value: '{{ iif(invert, "on", "off") }}'
+
+actions:
+- choose:
+  - conditions:
+    - '{{ trigger.to_state.state == on_value }}'
+    - '{{ on_enabled }}'
+    - condition: !input on_conditions
+    sequence:
+    - action: homeassistant.turn_on
+      target: { entity_id: !input subjects }
+
+  - conditions:
+    - '{{ trigger.to_state.state == off_value }}'
+    - '{{ off_enabled }}'
+    - condition: !input off_conditions
+    sequence:
+    - action: homeassistant.turn_off
+      target: { entity_id: !input subjects }
