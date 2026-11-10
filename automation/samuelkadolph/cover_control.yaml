@@ -1,0 +1,367 @@
+blueprint:
+  name: Cover Control
+  description: Control covers with events.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/cover_control.yaml
+  input:
+    button_event:
+      name: Button Event
+      default: []
+      selector: &event
+        entity:
+          filter: [ domain: event ]
+          multiple: true
+    button_taps:
+      name: Button Tap Count
+      default: single
+      selector: &taps
+        select:
+          mode: dropdown
+          options: [ 'single', 'double', 'triple', 'quadruple', 'quintuple' ]
+    button_hold:
+      name: Button Hold
+      default: true
+      selector: { boolean: }
+    button_double_tap:
+      name: Button Double Tap
+      default: true
+      selector: { boolean: }
+    button_double_tap_invert_behaviour:
+      name: Button Double Tap Invert Behaviour
+      default: true
+      selector: { boolean: }
+    button_double_tap_position:
+      name: Button Double Tap Position
+      default: 100
+      selector: &position
+        number: { max: 100, min: 0, unit_of_measurement: '%' }
+
+    up_event:
+      name: Down Event
+      default: []
+      selector: *event
+    up_taps:
+      name: Up Tap Count
+      default: triple
+      selector: *taps
+    up_hold:
+      name: Up Hold
+      default: false
+      selector: { boolean: }
+    up_double_tap:
+      name: Up Double Tap
+      default: false
+      selector: { boolean: }
+    up_double_tap_position:
+      name: Up Double Tap Position
+      default: 100
+      selector: *position
+
+    down_event:
+      name: Down Event
+      default: []
+      selector: *event
+    down_taps:
+      default: triple
+      selector: *taps
+    down_hold:
+      name: Down Hold
+      default: false
+      selector: { boolean: }
+    down_double_tap:
+      name: Down Double Tap
+      default: false
+      selector: { boolean: }
+    down_double_tap_position:
+      name: Down Double Tap Position
+      default: 30
+      selector: *position
+
+    led_select:
+      name: LED Indicator
+      default:
+      selector:
+        entity:
+          filter: [ domain: select ]
+    led_invert:
+      name: Invert LED
+      default: false
+      selector: { boolean: }
+
+    covers:
+      name: Covers
+      selector:
+        entity:
+          domain: cover
+          multiple: true
+    state_variable:
+      name: State Variable
+      description: |
+        This automation requires a Number helper to store the current state of the shade.
+        Please create one that goes from 0 to 4 and select it here.
+        Must only be shared with automations controlling the same set of shades.
+      selector: { entity: { domain: input_number } }
+    idle_timeout:
+      name: Idle Timeout
+      description: How long to wait before resetting the control state?
+      default: { seconds: 30 }
+      selector: { duration: }
+
+mode: parallel
+
+triggers:
+- trigger: state
+  attribute: current_position
+  entity_id: !input covers
+  for: !input idle_timeout
+  id: reset
+
+- trigger: state
+  entity_id: !input covers
+  not_from: [ 'unavailable', 'unknown' ]
+  to: open
+  id: cover_opened
+
+- trigger: state
+  entity_id: !input covers
+  not_from: [ 'unavailable', 'unknown' ]
+  to: closed
+  id: cover_closed
+
+- trigger: state
+  entity_id: !input button_event
+  not_from: [ 'unavailable', 'unknown' ]
+  not_to: [ 'unavailable', 'unknown' ]
+  id: button_event
+
+- trigger: state
+  entity_id: !input up_event
+  not_from: [ 'unavailable', 'unknown' ]
+  not_to: [ 'unavailable', 'unknown' ]
+  id: up_event
+
+- trigger: state
+  entity_id: !input down_event
+  not_from: [ 'unavailable', 'unknown' ]
+  not_to: [ 'unavailable', 'unknown' ]
+  id: down_event
+
+variables:
+  event: '{{ trigger.to_state.attributes.event_type if trigger.id.endswith("_event") else None }}'
+  events:
+    single: [ 'KeyPressed', 'multi_press_1' ]
+    double: [ 'KeyPressed2x', 'multi_press_2' ]
+    triple: [ 'KeyPressed3x', 'multi_press_3' ]
+    quadruple: [ 'KeyPressed4x', 'multi_press_4' ]
+    quintuple: [ 'KeyPressed5x', 'multi_press_5' ]
+    hold: [ 'KeyHeldDown', 'long_pressed' ]
+    released: [ 'KeyReleased', 'long_released' ]
+
+  button_taps: !input button_taps
+  button_hold: !input button_hold
+  button_double_tap: !input button_double_tap
+  button_double_tap_invert_behaviour: !input button_double_tap_invert_behaviour
+  button_double_tap_position: !input button_double_tap_position
+
+  up_taps: !input up_taps
+  up_hold: !input up_hold
+  up_double_tap: !input up_double_tap
+  up_double_tap_position: !input up_double_tap
+
+  down_taps: !input down_taps
+  down_hold: !input down_hold
+  down_double_tap: !input down_double_tap
+  down_double_tap_position: !input down_double_tap
+
+  led_select: !input led_select
+  led_select_on: Always on
+  led_select_off: Always off
+  led_invert: !input led_invert
+
+  state_variable: !input state_variable
+  state: '{{ int(states(state_variable)) }}'
+  state_idle: 0
+  state_opening: 1
+  state_opening_stopped: 2
+  state_closing: 3
+  state_closing_stopped: 4
+
+actions:
+- choose:
+  - conditions:
+    - '{{ trigger.id == "reset" }}'
+    sequence:
+    - action: input_number.set_value
+      target: { entity_id: !input state_variable }
+      data: { value: '{{ state_idle }}' }
+
+  - conditions:
+    - '{{ trigger.id == "cover_opened" }}'
+    - '{{ led_select is not none }}'
+    - { condition: state, entity_id: !input covers, match: any, state: open }
+    sequence: &led_on
+    - action: select.select_option
+      target: { entity_id: '{{ led_select }}' }
+      data: { option: '{{ iif(led_invert, led_select_off, led_select_on) }}' }
+
+  - conditions:
+    - '{{ trigger.id == "cover_closed" }}'
+    - '{{ led_select is not none }}'
+    sequence: &led_off
+    - action: select.select_option
+      target: { entity_id: '{{ led_select }}' }
+      data: { option: '{{ iif(led_invert, led_select_on, led_select_off) }}' }
+
+  - conditions:
+    - '{{ trigger.id == "button_event" and event in events[button_taps] }}'
+    sequence:
+    - choose:
+      - conditions:
+        - '{{ state == 0 }}'
+        sequence: &open_or_close_covers
+        - if:
+          - condition: state
+            entity_id: !input covers
+            state: closed
+          then: &open_covers
+          - action: cover.open_cover
+            target: { entity_id: !input covers }
+          - action: input_number.set_value
+            target: { entity_id: !input state_variable }
+            data: { value: '{{ state_opening }}' }
+          else: &close_covers
+          - action: cover.close_cover
+            target: { entity_id: !input covers }
+          - action: input_number.set_value
+            target: { entity_id: !input state_variable }
+            data: { value: '{{ state_closing }}' }
+      - conditions:
+        - '{{ state == state_opening }}'
+        sequence: &stop_opening
+        - action: cover.stop_cover
+          target: { entity_id: !input covers }
+        - action: input_number.set_value
+          target: { entity_id: !input state_variable }
+          data: { value: '{{ state_opening_stopped }}' }
+      - conditions:
+        - '{{ state == state_opening_stopped }}'
+        sequence: *close_covers
+      - conditions:
+        - '{{ state == state_closing }}'
+        sequence: &stop_closing
+        - action: cover.stop_cover
+          target: { entity_id: !input covers }
+        - action: input_number.set_value
+          target: { entity_id: !input state_variable }
+          data: { value: '{{ state_closing_stopped }}' }
+      - conditions:
+        - '{{ state == state_closing_stopped }}'
+        sequence: *open_covers
+
+  - conditions:
+    - '{{ trigger.id == "button_event" and event in events["double"] }}'
+    - '{{ button_double_tap }}'
+    sequence:
+    - if:
+      - '{{ button_double_tap_invert_behaviour }}'
+      then:
+      - if:
+        - condition: state
+          entity_id: !input covers
+          state: open
+        then: *open_covers
+        else: *close_covers
+      else:
+      - action: cover.set_cover_position
+        target: { entity_id: !input covers }
+        data: { position: '{{ button_double_tap_position }}' }
+
+  - conditions:
+    - '{{ trigger.id == "button_event" and event in events["hold"] }}'
+    - '{{ button_hold }}'
+    sequence:
+    - choose:
+      - conditions:
+        - '{{ state == state_idle }}'
+        sequence: *open_or_close_covers
+      - conditions:
+        - '{{ state in [state_opening, state_opening_stopped] }}'
+        sequence: *close_covers
+      - conditions:
+        - '{{ state in [state_closing, state_closing_stopped] }}'
+        sequence: *open_covers
+
+  - conditions:
+    - '{{ trigger.id == "button_event" and event in events["released"] }}'
+    - '{{ button_hold }}'
+    sequence:
+    - choose:
+      - conditions:
+        - '{{ state == state_opening }}'
+        sequence: *stop_opening
+      - conditions:
+        - '{{ state == state_closing }}'
+        sequence: *stop_closing
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event in events[up_taps] }}'
+    sequence:
+    - choose:
+      - conditions:
+        - '{{ state in [state_idle, state_opening_stopped, state_closing_stopped] }}'
+        sequence: *open_covers
+      - conditions:
+        - '{{ state == state_closing }}'
+        sequence: *stop_closing
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event in events["double"] }}'
+    - '{{ up_double_tap }}'
+    sequence:
+    - action: cover.set_cover_position
+      target: { entity_id: !input covers }
+      data: { position: '{{ up_double_tap_position }}' }
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event in events["hold"] }}'
+    - '{{ up_hold }}'
+    - '{{ state != state_opening }}'
+    sequence: *open_covers
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event in events["released"] }}'
+    - '{{ up_hold }}'
+    - '{{ state == state_opening }}'
+    sequence: *stop_opening
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event in events[down_taps] }}'
+    sequence:
+    - choose:
+      - conditions:
+        - '{{ state in [state_idle, state_opening_stopped, state_closing_stopped] }}'
+        sequence: *close_covers
+      - conditions:
+        - '{{ state == state_opening }}'
+        sequence: *stop_opening
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event in events["double"] }}'
+    - '{{ down_double_tap }}'
+    sequence:
+    - action: cover.set_cover_position
+      target: { entity_id: !input covers }
+      data: { position: '{{ down_double_tap_position }}' }
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event in events["hold"] }}'
+    - '{{ down_hold }}'
+    - '{{ state != state_closing }}'
+    sequence: *close_covers
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event in events["released"] }}'
+    - '{{ down_hold }}'
+    - '{{ state == state_closing }}'
+    sequence: *stop_closing
