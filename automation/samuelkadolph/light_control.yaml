@@ -1,0 +1,320 @@
+blueprint:
+  name: Light Control
+  description: Control lights with events.
+  domain: automation
+  author: Samuel Kadolph
+  source_url: https://github.com/samuelkadolph/hass-blueprints/blob/main/automation/samuelkadolph/light_control.yaml
+  input:
+    button_event:
+      name: Button Event
+      default: []
+      selector: &event
+        entity:
+          filter: [ domain: event ]
+          multiple: true
+    button_taps:
+      name: Button Tap Count
+      default: single
+      selector: &taps
+        select:
+          mode: dropdown
+          options: [ single, double, triple, quadruple, quintuple ]
+    button_hold:
+      name: Button Hold
+      default: true
+      selector: { boolean: }
+    button_double_tap:
+      name: Button Double Tap
+      default: true
+      selector: { boolean: }
+    button_double_tap_brightness:
+      name: Button Double Tap Brightness
+      default: 100
+      selector: &brightness
+        number: { max: 100, min: 0, unit_of_measurement: '%' }
+
+    up_event:
+      name: Down Event
+      default: []
+      selector: *event
+    up_taps:
+      name: Up Tap Count
+      default: single
+      selector: *taps
+    up_hold:
+      name: Up Hold
+      default: true
+      selector: { boolean: }
+    up_double_tap:
+      name: Up Double Tap
+      default: true
+      selector: { boolean: }
+    up_double_tap_brightness:
+      name: Up Double Tap Brightness
+      default: 100
+      selector: *brightness
+
+    down_event:
+      name: Down Event
+      default: []
+      selector: *event
+    down_taps:
+      default: single
+      selector: *taps
+    down_hold:
+      name: Down Hold
+      default: true
+      selector: { boolean: }
+    down_double_tap:
+      name: Down Double Tap
+      default: true
+      selector: { boolean: }
+    down_double_tap_brightness:
+      name: Down Double Tap Brightness
+      default: 30
+      selector: *brightness
+
+    led_select:
+      name: LED Indicator
+      default:
+      selector:
+        entity:
+          filter: [ domain: select ]
+    led_invert:
+      name: Invert LED
+      default: false
+      selector: { boolean: }
+
+    hold_brightness_step_up:
+      name: Hold Brightness Step Up
+      default: 10
+      selector: *brightness
+    hold_brightness_step_down:
+      name: Hold Brightness Step Down
+      default: 10
+      selector: *brightness
+    hold_brightness_step_interval:
+      name: Hold Brightness Step Interval
+      default: 600
+      selector:
+        number: { max: 2000, min: 200, step: 10, unit_of_measurement: ms }
+
+    lights:
+      name: Lights
+      selector:
+        entity:
+          domain: [ fan, light, switch ]
+          multiple: true
+
+mode: parallel
+
+triggers:
+- trigger: state
+  entity_id: !input lights
+  to: 'on'
+  id: lights_on
+
+- trigger: state
+  entity_id: !input lights
+  to: 'off'
+  id: lights_off
+
+- trigger: state
+  entity_id: !input button_event
+  not_from: [ unavailable, unknown ]
+  not_to: [ unavailable, unknown ]
+  id: button_event
+
+- trigger: state
+  entity_id: !input up_event
+  not_from: [ unavailable, unknown ]
+  not_to: [ unavailable, unknown ]
+  id: up_event
+
+- trigger: state
+  entity_id: !input down_event
+  not_from: [ unavailable, unknown ]
+  not_to: [ unavailable, unknown ]
+  id: down_event
+
+variables:
+  event: '{{ trigger.to_state.attributes.event_type if trigger.id.endswith("_event") else None }}'
+  event_entity: '{{ trigger.to_state.entity_id }}'
+  events:
+    single: [ KeyPressed, multi_press_1 ]
+    double: [ KeyPressed2x, multi_press_2 ]
+    triple: [ KeyPressed3x, multi_press_3 ]
+    quadruple: [ KeyPressed4x, multi_press_4 ]
+    quintuple: [ KeyPressed5x, multi_press_5 ]
+    hold: [ KeyHeldDown, long_pressed ]
+    released: [ KeyReleased, long_released ]
+
+  button_taps: !input button_taps
+  button_hold: !input button_hold
+  button_double_tap: !input button_double_tap
+  button_double_tap_brightness: !input button_double_tap_brightness
+
+  up_taps: !input up_taps
+  up_hold: !input up_hold
+  up_double_tap: !input up_double_tap
+  up_double_tap_brightness: !input up_double_tap_brightness
+
+  down_taps: !input down_taps
+  down_hold: !input down_hold
+  down_double_tap: !input down_double_tap
+  down_double_tap_brightness: !input down_double_tap_brightness
+
+  led_select: !input led_select
+  led_select_on: Always on
+  led_select_off: Always off
+  led_invert: !input led_invert
+
+  subjects: !input lights
+  subjects_list: '{{ iif(subjects is list, subjects, [subjects]) }}'
+  fans: '{{ subjects_list | select("search", "^fan\.") | list }}'
+  lights: '{{ subjects_list | select("search", "^light\.") | list }}'
+  switches: '{{ subjects_list | select("search", "^switch\.") | list }}'
+
+actions:
+- choose:
+  - conditions:
+    - '{{ trigger.id == "lights_on" }}'
+    - '{{ led_select is not none }}'
+    - { condition: state, entity_id: !input lights, match: any, state: 'on' }
+    sequence: &led_on
+    - action: select.select_option
+      target: { entity_id: '{{ led_select }}' }
+      data: { option: '{{ iif(led_invert, led_select_off, led_select_on) }}' }
+
+  - conditions:
+    - '{{ trigger.id == "lights_off" }}'
+    - '{{ led_select is not none }}'
+    - { condition: state, entity_id: !input lights, state: 'off' }
+    sequence: &led_off
+    - action: select.select_option
+      target: { entity_id: '{{ led_select }}' }
+      data: { option: '{{ iif(led_invert, led_select_on, led_select_off) }}' }
+
+  - conditions:
+    - '{{ trigger.id == "button_event" and event in events[button_taps] }}'
+    sequence:
+    - if:
+      - { condition: state, entity_id: !input lights, match: any, state: 'on' }
+      then:
+      - parallel: &turn_off
+        - action: fan.turn_off
+          target: { entity_id: '{{ fans }}' }
+        - action: light.turn_off
+          target: { entity_id: '{{ lights }}' }
+        - action: switch.turn_off
+          target: { entity_id: '{{ switches }}' }
+      else:
+      - parallel: &turn_on
+        - action: fan.turn_on
+          target: { entity_id: '{{ fans }}' }
+        - action: light.turn_on
+          target: { entity_id: '{{ lights }}' }
+        - action: switch.turn_on
+          target: { entity_id: '{{ switches }}' }
+
+  - conditions:
+    - '{{ trigger.id == "button_event" and event in events["double"] }}'
+    - '{{ button_double_tap }}'
+    sequence:
+    - parallel:
+      - action: fan.turn_on
+        target: { entity_id: '{{ fans }}' }
+        data: { percentage: '{{ button_double_tap_brightness }}' }
+      - action: light.turn_on
+        target: { entity_id: '{{ lights }}' }
+        data: { brightness_pct: '{{ button_double_tap_brightness }}' }
+      - action: switch.turn_on
+        target: { entity_id: '{{ switches }}' }
+
+  - conditions:
+    - '{{ trigger.id == "button_event" and event in events["hold"] }}'
+    - '{{ button_hold }}'
+    sequence:
+    - if:
+      - '{{ min(expand(lights) | map(attribute="attributes.brightness") | map("int", 0)) >= 128 }}'
+      then: &dim_lights
+      - repeat:
+          sequence:
+          - action: light.turn_on
+            target: { entity_id: '{{ lights }}' }
+            data: { brightness_step_pct: '{{ -hold_brightness_step_down }}' }
+          - delay: { milliseconds: '{{ hold_brightness_step_interval }}' }
+          while:
+          - '{{ state_attr(event_entity, "event_type") in events["hold"] }}'
+          - '{{ max(expand(lights) | map(attribute="attributes.brightness") | map("int", 0)) > 0 }}'
+      else: &brighten_lights
+      - repeat:
+          sequence:
+          - action: light.turn_on
+            target: { entity_id: '{{ lights }}' }
+            data: { brightness_step_pct: '{{ hold_brightness_step_up }}' }
+          - delay: { milliseconds: '{{ hold_brightness_step_interval }}' }
+          while:
+          - '{{ state_attr(event_entity, "event_type") in events["hold"] }}'
+          - '{{ min(expand(lights) | map(attribute="attributes.brightness") | map("int", 0)) < 255 }}'
+
+  - conditions:
+    - '{{ trigger.id == "button_event" and event in events["released"] }}'
+    - '{{ button_hold }}'
+    sequence: []
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event in events[up_taps] }}'
+    sequence: *turn_on
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event in events["double"] }}'
+    - '{{ up_double_tap }}'
+    sequence:
+    - parallel:
+      - action: fan.turn_on
+        target: { entity_id: '{{ fans }}' }
+        data: { percentage: '{{ up_double_tap_brightness }}' }
+      - action: light.turn_on
+        target: { entity_id: '{{ lights }}' }
+        data: { brightness_pct: '{{ up_double_tap_brightness }}' }
+      - action: switch.turn_on
+        target: { entity_id: '{{ switches }}' }
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event in events["hold"] }}'
+    - '{{ up_hold }}'
+    sequence: *brighten_lights
+
+  - conditions:
+    - '{{ trigger.id == "up_event" and event in events["released"] }}'
+    - '{{ up_hold }}'
+    sequence: []
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event in events[down_taps] }}'
+    sequence: *turn_off
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event in events["double"] }}'
+    - '{{ down_double_tap }}'
+    sequence:
+    - parallel:
+      - action: fan.turn_on
+        target: { entity_id: '{{ fans }}' }
+        data: { percentage: '{{ down_double_tap_brightness }}' }
+      - action: light.turn_on
+        target: { entity_id: '{{ lights }}' }
+        data: { brightness_pct: '{{ down_double_tap_brightness }}' }
+      - action: switch.turn_on
+        target: { entity_id: '{{ switches }}' }
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event in events["hold"] }}'
+    - '{{ down_hold }}'
+    sequence: *dim_lights
+
+  - conditions:
+    - '{{ trigger.id == "down_event" and event in events["released"] }}'
+    - '{{ down_hold }}'
+    sequence: []
