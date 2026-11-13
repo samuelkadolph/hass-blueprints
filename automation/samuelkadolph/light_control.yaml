@@ -169,6 +169,10 @@ variables:
   led_select_off: Always off
   led_invert: !input led_invert
 
+  hold_brightness_step_up: !input hold_brightness_step_up
+  hold_brightness_step_down: !input hold_brightness_step_down
+  hold_brightness_step_interval: !input hold_brightness_step_interval
+
   subjects: !input lights
   subjects_list: '{{ iif(subjects is list, subjects, [subjects]) }}'
   fans: '{{ subjects_list | select("search", "^fan\.") | list }}'
