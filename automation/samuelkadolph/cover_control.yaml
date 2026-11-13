@@ -18,7 +18,7 @@ blueprint:
       selector: &taps
         select:
           mode: dropdown
-          options: [ 'single', 'double', 'triple', 'quadruple', 'quintuple' ]
+          options: [ single, double, triple, quadruple, quintuple ]
     button_hold:
       name: Button Hold
       default: true
@@ -119,44 +119,44 @@ triggers:
 
 - trigger: state
   entity_id: !input covers
-  not_from: [ 'unavailable', 'unknown' ]
+  not_from: [ unavailable, unknown ]
   to: open
   id: cover_opened
 
 - trigger: state
   entity_id: !input covers
-  not_from: [ 'unavailable', 'unknown' ]
+  not_from: [ unavailable, unknown ]
   to: closed
   id: cover_closed
 
 - trigger: state
   entity_id: !input button_event
-  not_from: [ 'unavailable', 'unknown' ]
-  not_to: [ 'unavailable', 'unknown' ]
+  not_from: [ unavailable, unknown ]
+  not_to: [ unavailable, unknown ]
   id: button_event
 
 - trigger: state
   entity_id: !input up_event
-  not_from: [ 'unavailable', 'unknown' ]
-  not_to: [ 'unavailable', 'unknown' ]
+  not_from: [ unavailable, unknown ]
+  not_to: [ unavailable, unknown ]
   id: up_event
 
 - trigger: state
   entity_id: !input down_event
-  not_from: [ 'unavailable', 'unknown' ]
-  not_to: [ 'unavailable', 'unknown' ]
+  not_from: [ unavailable, unknown ]
+  not_to: [ unavailable, unknown ]
   id: down_event
 
 variables:
   event: '{{ trigger.to_state.attributes.event_type if trigger.id.endswith("_event") else None }}'
   events:
-    single: [ 'KeyPressed', 'multi_press_1' ]
-    double: [ 'KeyPressed2x', 'multi_press_2' ]
-    triple: [ 'KeyPressed3x', 'multi_press_3' ]
-    quadruple: [ 'KeyPressed4x', 'multi_press_4' ]
-    quintuple: [ 'KeyPressed5x', 'multi_press_5' ]
-    hold: [ 'KeyHeldDown', 'long_pressed' ]
-    released: [ 'KeyReleased', 'long_released' ]
+    single: [ KeyPressed, multi_press_1 ]
+    double: [ KeyPressed2x, multi_press_2 ]
+    triple: [ KeyPressed3x, multi_press_3 ]
+    quadruple: [ KeyPressed4x, multi_press_4 ]
+    quintuple: [ KeyPressed5x, multi_press_5 ]
+    hold: [ KeyHeldDown, long_pressed ]
+    released: [ KeyReleased, long_released ]
 
   button_taps: !input button_taps
   button_hold: !input button_hold
@@ -167,12 +167,12 @@ variables:
   up_taps: !input up_taps
   up_hold: !input up_hold
   up_double_tap: !input up_double_tap
-  up_double_tap_position: !input up_double_tap
+  up_double_tap_position: !input up_double_tap_position
 
   down_taps: !input down_taps
   down_hold: !input down_hold
   down_double_tap: !input down_double_tap
-  down_double_tap_position: !input down_double_tap
+  down_double_tap_position: !input down_double_tap_position
 
   led_select: !input led_select
   led_select_on: Always on
